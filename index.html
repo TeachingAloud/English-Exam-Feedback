@@ -196,7 +196,7 @@
       <div class="card-title">📖 Section A — Reading Comprehension</div>
       <div class="card-sub">Enter the mark you received for each question. The number in brackets is the maximum.</div>
       <div id="secAQuestions"></div>
-      <div class="sec-total">Section A total: <strong id="totA">0 / 25</strong></div>
+      <div class="sec-total">Section A total: <strong id="totA">0 / 21</strong></div>
     </div>
     <div class="nav">
       <button class="btn btn-ghost" onclick="go(1)">&larr; Back</button>
@@ -272,9 +272,9 @@
       <p id="rSub"></p>
       <div id="rGrade" style="margin:12px 0 4px"></div>
       <div class="score-row">
-        <div class="score-cell"><div class="num" id="rTotal">—</div><div class="lbl">Total / 55</div></div>
-        <div class="score-cell"><div class="num" id="rPct">—</div><div class="lbl">Percentage</div></div>
-        <div class="score-cell"><div class="num" id="rABC">—</div><div class="lbl">A / B / C</div></div>
+        <div class="score-cell"><div class="num" id="rTotal" style="font-size:1.1rem">—</div><div class="lbl">Total / 51</div></div>
+        <div class="score-cell"><div class="num" id="rPct" style="font-size:1.1rem">—</div><div class="lbl">Percentage</div></div>
+        <div class="score-cell"><div class="num" id="rABC" style="font-size:1.1rem">—</div><div class="lbl">A / B / C</div></div>
       </div>
     </div>
 
@@ -441,6 +441,18 @@ const CRIT = [
   { id:'ww', label:'Ww — Spelling',               max:2, desc:'Accuracy including ambitious words (7Ww.01/03)' },
 ];
 
+// Totals — Section A is 21 marks (not 25; the mark scheme confirms this)
+const TOTALS = { a: 21, b: 15, c: 15, all: 51 };
+
+// Grade bands
+const GRADE_BANDS = [
+  { label: 'Basic',       lower: 0,  upper: 40,  bg: '#fee2e2', color: '#991b1b', border: '#fca5a5' },
+  { label: 'Aspiring',    lower: 40, upper: 50,  bg: '#ffedd5', color: '#9a3412', border: '#fdba74' },
+  { label: 'Good',        lower: 50, upper: 65,  bg: '#fef3c7', color: '#78350f', border: '#fcd34d' },
+  { label: 'High',        lower: 65, upper: 75,  bg: '#dbeafe', color: '#1e3a8a', border: '#93c5fd' },
+  { label: 'Outstanding', lower: 75, upper: 100, bg: '#d1fae5', color: '#065f46', border: '#6ee7b7' },
+];
+
 // Radar axes — 6 Cambridge sub-strand clusters
 const AXES = [
   { label:['Retrieval &','Summarising'],    key:'ret',   qs:['q1','q12a','q12b'],          max:7  },
@@ -491,7 +503,7 @@ function clamp(el, max) {
 }
 function totA() {
   const t = QS.reduce((s,q)=>s+(parseInt(document.getElementById(q.id).value)||0),0);
-  document.getElementById('totA').textContent = `${t} / 25`;
+  document.getElementById('totA').textContent = `${t} / ${TOTALS.a}`;
 }
 function totC() {
   const t = CRIT.reduce((s,c)=>s+(parseInt(document.getElementById(c.id).value)||0),0);
@@ -513,11 +525,61 @@ function scores() {
   return { a, b, c, tot:a+b+c };
 }
 function getGrade(pct) {
-  if (pct >= 75) return { label:'Outstanding', range:'75–100%', bg:'#d1fae5', color:'#065f46', border:'#6ee7b7' };
-  if (pct >= 65) return { label:'High',        range:'65–74%',  bg:'#dbeafe', color:'#1e3a8a', border:'#93c5fd' };
-  if (pct >= 50) return { label:'Good',        range:'50–64%',  bg:'#fef3c7', color:'#78350f', border:'#fcd34d' };
-  if (pct >= 40) return { label:'Aspiring',    range:'40–49%',  bg:'#ffedd5', color:'#9a3412', border:'#fdba74' };
-  return               { label:'Basic',        range:'0–39%',   bg:'#fee2e2', color:'#991b1b', border:'#fca5a5' };
+  for (let i = GRADE_BANDS.length - 1; i >= 0; i--) {
+    if (pct >= GRADE_BANDS[i].lower) {
+      const b = GRADE_BANDS[i];
+      return { ...b, range: `${b.lower}–${b.upper}%` };
+    }
+  }
+  return { ...GRADE_BANDS[0], range: '0–39%' };
+}
+
+function buildGradeBar(pct, tot) {
+  const grade  = getGrade(pct);
+  const idx    = GRADE_BANDS.findIndex(b => b.label === grade.label);
+  const next   = GRADE_BANDS[idx + 1] || null;
+
+  // Marks at each boundary
+  const lowerMark = Math.ceil((grade.lower / 100) * TOTALS.all);
+  const aboveMarks = Math.max(0, tot - lowerMark);
+  const fromLowerTxt = `${aboveMarks} mark${aboveMarks !== 1 ? 's' : ''} above the ${grade.label} lower boundary (${grade.lower}%)`;
+
+  let toNextTxt = 'Top grade achieved!';
+  if (next) {
+    const nextMark   = Math.ceil((next.lower / 100) * TOTALS.all);
+    const toNext     = Math.max(0, nextMark - tot);
+    toNextTxt = `${toNext} mark${toNext !== 1 ? 's' : ''} from ${next.label} (${next.lower}%)`;
+  }
+
+  // Bar: each band's width = its percentage-point span
+  const segments = GRADE_BANDS.map(b => {
+    const w = b.upper - b.lower;
+    const active = b.label === grade.label;
+    return `<div style="width:${w}%;background:${b.bg};height:100%;opacity:${active ? 1 : 0.55}"></div>`;
+  }).join('');
+
+  const markerLeft = Math.min(Math.max(pct, 1), 99);
+
+  const boundaryTicks = [40, 50, 65, 75].map(p =>
+    `<div style="position:absolute;left:${p}%;transform:translateX(-50%);font-size:0.65rem;opacity:0.8;white-space:nowrap">${p}%</div>`
+  ).join('');
+
+  return `
+    <div style="margin:10px 0 4px">
+      <div style="position:relative">
+        <div style="display:flex;height:16px;border-radius:8px;overflow:hidden;box-shadow:0 1px 5px rgba(0,0,0,0.2)">
+          ${segments}
+        </div>
+        <div style="position:absolute;left:${markerLeft}%;top:-2px;transform:translateX(-50%);pointer-events:none">
+          <div style="width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:7px solid rgba(255,255,255,0.95);margin:0 auto"></div>
+          <div style="width:2px;height:16px;background:rgba(255,255,255,0.9);margin:0 auto"></div>
+        </div>
+      </div>
+      <div style="position:relative;height:18px;margin-top:1px">${boundaryTicks}</div>
+      <div style="text-align:center;font-size:0.78rem;opacity:0.88;margin-top:2px;line-height:1.6">
+        ${fromLowerTxt}&nbsp;&nbsp;·&nbsp;&nbsp;${toNextTxt}
+      </div>
+    </div>`;
 }
 function radarPcts() {
   return AXES.map(ax => {
@@ -578,14 +640,14 @@ function buildPrompt() {
 
 STUDENT: ${S.name}${S.teacher?` | Teacher: ${S.teacher}`:''}${S.cls?` | Class: ${S.cls}`:''}
 
-EXAM: Y7 English End-of-Year Exam (55 marks total)
+EXAM: Y7 English End-of-Year Exam (${TOTALS.all} marks total)
 Framework: Cambridge Lower Secondary English 0861, Stage 7
 
 RESULTS SUMMARY:
-Section A (Reading Comprehension): ${sc.a}/25 (${Math.round(sc.a/25*100)}%)
-Section B (Comparative Writing):   ${sc.b}/15 (${Math.round(sc.b/15*100)}%) — ${bandLabel}
-Section C (Creative Writing):      ${sc.c}/15 (${Math.round(sc.c/15*100)}%)
-Overall: ${sc.tot}/55 (${pct}%) — Grade: ${grade.label} (${grade.range})
+Section A (Reading Comprehension): ${sc.a}/${TOTALS.a} (${Math.round(sc.a/TOTALS.a*100)}%)
+Section B (Comparative Writing):   ${sc.b}/${TOTALS.b} (${Math.round(sc.b/TOTALS.b*100)}%) — ${bandLabel}
+Section C (Creative Writing):      ${sc.c}/${TOTALS.c} (${Math.round(sc.c/TOTALS.c*100)}%)
+Overall: ${sc.tot}/${TOTALS.all} (${pct}%) — Grade: ${grade.label} (${grade.range})
 
 SECTION A QUESTION BREAKDOWN:
 ${qLines}
@@ -662,18 +724,21 @@ function parseAI(txt) {
 /* ── Render results ──────────────────────────────────────────── */
 function render(parsed) {
   const sc = scores();
-  const pct = Math.round(sc.tot/55*100);
+  const pct = Math.round(sc.tot / TOTALS.all * 100);
   const grade = getGrade(pct);
   // Hero
   document.getElementById('rName').textContent  = `${S.name} — Exam Summary`;
   document.getElementById('rSub').textContent   = `Year 7 English${S.teacher?` · ${S.teacher}`:''}${S.cls?` · ${S.cls}`:''}`;
   document.getElementById('rTotal').textContent = sc.tot;
   document.getElementById('rPct').textContent   = `${pct}%`;
-  document.getElementById('rABC').textContent   = `${sc.a}/${sc.b}/${sc.c}`;
+  document.getElementById('rABC').textContent   = `${sc.a} / ${sc.b} / ${sc.c}`;
   document.getElementById('rGrade').innerHTML   =
-    `<span style="display:inline-flex;align-items:center;gap:8px;background:${grade.bg};color:${grade.color};border:1.5px solid ${grade.border};border-radius:24px;padding:6px 18px;font-weight:800;font-size:1rem;">
-      ${grade.label} <span style="font-weight:400;font-size:0.8rem;opacity:0.8">(${grade.range})</span>
-    </span>`;
+    `<div style="margin-bottom:6px">
+      <span style="display:inline-flex;align-items:center;gap:8px;background:${grade.bg};color:${grade.color};border:2px solid ${grade.border};border-radius:28px;padding:8px 22px;font-weight:800;font-size:1.15rem;">
+        ${grade.label}
+      </span>
+    </div>
+    ${buildGradeBar(pct, sc.tot)}`;
 
   // Radar
   drawRadar();
@@ -775,80 +840,10 @@ function drawTable(sc) {
     const got=S.marks[q.id], pct=Math.round(got/q.max*100);
     h += `<tr><td>${q.label}</td><td>${got}</td><td>${q.max}</td><td>${pct}%${pctBar(pct)}</td></tr>`;
   });
-  h += `<tr class="sub-total"><td>Section A Total</td><td>${sc.a}</td><td>25</td><td>${Math.round(sc.a/25*100)}%</td></tr>`;
+  h += `<tr class="sub-total"><td>Section A Total</td><td>${sc.a}</td><td>${TOTALS.a}</td><td>${Math.round(sc.a/TOTALS.a*100)}%</td></tr>`;
 
   h += `<tr class="sec-hdr"><td colspan="4">Section B — Comparative Writing</td></tr>
     <tr><td>Q13 — Comparative Essay</td><td>${sc.b}</td><td>15</td><td>${Math.round(sc.b/15*100)}%${pctBar(Math.round(sc.b/15*100))}</td></tr>
     <tr class="sub-total"><td>Section B Total</td><td>${sc.b}</td><td>15</td><td>${Math.round(sc.b/15*100)}%</td></tr>`;
 
-  h += `<tr class="sec-hdr"><td colspan="4">Section C — Creative Writing</td></tr>`;
-  CRIT.forEach(c => {
-    const got=S.cMarks[c.id], pct=Math.round(got/c.max*100);
-    h += `<tr><td>${c.label}</td><td>${got}</td><td>${c.max}</td><td>${pct}%${pctBar(pct)}</td></tr>`;
-  });
-  h += `<tr class="sub-total"><td>Section C Total</td><td>${sc.c}</td><td>15</td><td>${Math.round(sc.c/15*100)}%</td></tr>`;
-
-  h += `<tr class="total-row"><td>Overall Total</td><td>${sc.tot}</td><td>55</td><td>${Math.round(sc.tot/55*100)}%</td></tr>`;
-  h += `</tbody>`;
-  el.innerHTML = h;
-}
-
-/* ── Generate ────────────────────────────────────────────────── */
-async function generate() {
-  collect();
-  if (!S.name) { document.getElementById('genErr').innerHTML='<div class="error-box">Please enter your name on step 1 before generating.</div>'; return; }
-  document.getElementById('genErr').innerHTML='';
-  document.getElementById('overlay').classList.add('on');
-  try {
-    const txt = await callAPI(buildPrompt());
-    const parsed = parseAI(txt);
-    render(parsed);
-  } catch(e) {
-    console.error(e);
-    document.getElementById('genErr').innerHTML=`<div class="error-box">⚠️ Could not generate report: ${e.message}. Please try again or contact your teacher.</div>`;
-  } finally {
-    document.getElementById('overlay').classList.remove('on');
-  }
-}
-
-/* ── PDF download ────────────────────────────────────────────── */
-async function dlPDF() {
-  const btn = document.getElementById('dlBtn');
-  btn.disabled = true; btn.textContent = 'Preparing PDF…';
-  try {
-    // Snapshot the chart canvas as an image so html2canvas captures it correctly
-    const canvas = document.getElementById('radar');
-    const imgData = canvas.toDataURL('image/png');
-    const tmp = document.createElement('img');
-    tmp.src = imgData;
-    tmp.style.cssText = canvas.style.cssText;
-    tmp.width  = canvas.offsetWidth;
-    tmp.height = canvas.offsetHeight;
-    canvas.parentNode.replaceChild(tmp, canvas);
-
-    const el = document.getElementById('results');
-    const fname = `${(S.name||'Student').replace(/\s+/g,'_')}_Y7_English_Summary.pdf`;
-    await html2pdf().set({
-      margin: [10, 10, 12, 10],
-      filename: fname,
-      image: { type:'jpeg', quality:0.96 },
-      html2canvas: { scale:2, useCORS:true, backgroundColor:'#f4f6f9' },
-      jsPDF: { unit:'mm', format:'a4', orientation:'portrait' },
-      pagebreak: { mode:['avoid-all','css','legacy'] },
-    }).from(el).save();
-
-    // Restore canvas
-    tmp.parentNode.replaceChild(canvas, tmp);
-  } finally {
-    btn.disabled = false; btn.textContent = '⬇ Download PDF';
-  }
-}
-
-function startOver() {
-  if (confirm('This will clear all your entries. Are you sure?')) location.reload();
-}
-
-buildForms();
-</script>
-</body>
-</html>
+  h +
