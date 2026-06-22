@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>English Exam Summary Generator</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
     :root {
       --navy: #1a3a5c; --navy-light: #2a5080;
@@ -40,6 +39,12 @@
     }
     input:focus, textarea:focus { outline: none; border-color: var(--navy); box-shadow: 0 0 0 3px rgba(26,58,92,.1); }
     textarea { min-height: 80px; resize: vertical; }
+
+    /* Option/choice pill selector (which poem / question / task) */
+    .choice-pills { display: flex; flex-direction: column; gap: 7px; margin-top: 6px; margin-bottom: 18px; }
+    .choice-pill { padding: 10px 15px; border: 2px solid var(--border); border-radius: 8px; background: #fff; font: inherit; font-size: 0.87rem; text-align: left; cursor: pointer; transition: all .15s; color: var(--text); line-height: 1.4; }
+    .choice-pill:hover { border-color: var(--navy); color: var(--navy); }
+    .choice-pill.chosen { background: var(--navy); border-color: var(--navy); color: #fff; }
 
     /* Year group selector */
     .year-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
@@ -131,7 +136,19 @@
     .sec-heading { display: flex; align-items: center; gap: 10px; font-size: 1.05rem; font-weight: 700; color: var(--navy); margin-bottom: 4px; }
     .sec-heading::after { content: ''; flex: 1; height: 2px; background: linear-gradient(to right, var(--gold), transparent); }
 
-    @media print { .no-print { display: none !important; } }
+    @media print {
+      @page { margin: 14mm 12mm; }
+      * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+      body { background: #fff !important; font-size: 11pt; }
+      .site-header, .stepper, #pg1, #pg2, #pg3, #pg4, #pg5, .no-print { display: none !important; }
+      #results { display: block !important; }
+      .wrap { padding: 0 !important; max-width: 100% !important; }
+      .card { box-shadow: none !important; border: 1px solid #d0d8e8 !important; break-inside: avoid; margin-bottom: 10px; padding: 16px 20px; }
+      .r-hero { break-inside: avoid; }
+      .chart-wrap { break-inside: avoid; max-width: 320px; }
+      .mt, .analysis, .action-item, .book-item { break-inside: avoid; }
+      .sec-heading { break-after: avoid; }
+    }
   </style>
 </head>
 <body>
@@ -169,7 +186,7 @@
       <div class="year-grid">
         <button class="yr-btn" id="yr-Y7"  onclick="selectYear('Y7')">Year 7<span class="yr-tag">Available</span></button>
         <button class="yr-btn coming-soon" id="yr-Y8"  onclick="selectYear('Y8')">Year 8<span class="yr-tag">Coming soon</span></button>
-        <button class="yr-btn coming-soon" id="yr-Y9"  onclick="selectYear('Y9')">Year 9<span class="yr-tag">Coming soon</span></button>
+        <button class="yr-btn" id="yr-Y9"  onclick="selectYear('Y9')">Year 9<span class="yr-tag">Available</span></button>
         <button class="yr-btn coming-soon" id="yr-Y10" onclick="selectYear('Y10')">Year 10<span class="yr-tag">Coming soon</span></button>
       </div>
       <div class="coming-banner" id="comingBanner">
@@ -188,6 +205,7 @@
     <div class="card">
       <div class="card-title" id="secATitle">📖 Section A — Reading Comprehension</div>
       <div class="card-sub">Enter the mark you received for each question.</div>
+      <div id="secAChoiceArea"></div>
       <div id="secAQuestions"></div>
       <div class="sec-total">Section A total: <strong id="totA">0 / —</strong></div>
     </div>
@@ -202,6 +220,7 @@
     <div class="card">
       <div class="card-title" id="secBTitle">✍️ Section B — Comparative Writing</div>
       <div class="card-sub">Enter your total mark, then your teacher's written feedback.</div>
+      <div id="secBChoiceArea"></div>
       <div class="field">
         <label for="bMark">Section B mark</label>
         <div class="q-entry"><input type="number" id="bMark" min="0" max="15" value="0" oninput="clamp(this,EXAM.totals.b);bandB()"><span class="of" id="bMarkOf">/ 15</span></div>
@@ -223,6 +242,7 @@
     <div class="card">
       <div class="card-title" id="secCTitle">🖊️ Section C — Creative Writing</div>
       <div class="card-sub">Enter your mark for each criterion, then your teacher's feedback.</div>
+      <div id="secCChoiceArea"></div>
       <div id="secCCriteria"></div>
       <div class="sec-total">Section C total: <strong id="totC">0 / —</strong></div>
       <div class="fb-grid" style="margin-top:20px;padding-top:18px;border-top:1px solid var(--border)">
@@ -302,9 +322,10 @@
       <div id="rBooks"></div>
     </div>
 
-    <div style="display:flex;gap:12px;justify-content:center;margin:20px 0" class="no-print">
-      <button class="btn btn-navy btn-lg" onclick="dlPDF()" id="dlBtn">⬇ Download PDF</button>
-      <button class="btn btn-ghost" onclick="startOver()">Start Over</button>
+    <div style="text-align:center;margin:20px 0" class="no-print">
+      <button class="btn btn-navy btn-lg" onclick="dlPDF()" id="dlBtn">🖨️ Save as PDF</button>
+      <button class="btn btn-ghost" onclick="startOver()" style="margin-left:12px">Start Over</button>
+      <p style="font-size:0.8rem;color:var(--muted);margin-top:10px">A print dialog will open — set the <strong>Destination</strong> to <strong>Save as PDF</strong></p>
     </div>
   </div>
 
@@ -436,7 +457,15 @@ const EXAMS = {
           { id:'q12b',label:'Q12b — Write a summary in your own words (up to 50 words)',        max:2, aos:'7Ri.06' },
         ],
       },
-      b: { name: 'Comparative Writing' },
+      b: {
+        name: 'Comparative Writing',
+        bands: [
+          { label:'Band 4 (High)', range:'12–15', desc:'Clear, sustained comparison; precise language analysis of both texts.' },
+          { label:'Band 3 (Mid)',  range:'8–11',  desc:'Some comparison; identifies language effects in both texts.' },
+          { label:'Band 2 (Low)', range:'4–7',   desc:'Treats texts somewhat separately; limited comparison.' },
+          { label:'Band 1',       range:'1–3',   desc:'Brief response; mostly retelling with little analysis.' },
+        ],
+      },
       c: {
         name: 'Creative Writing',
         criteria: [
@@ -464,10 +493,59 @@ const EXAMS = {
     comingSoon: true,
   },
 
-  // ── Y9 — add exam data here when ready ──────────────────────
   Y9: {
     label: 'Year 9',
-    comingSoon: true,
+    comingSoon: false,
+    examContext: 'The exam covered three sections of poetry and imaginative writing, assessed against Edexcel IGCSE English Language and Literature adapted assessment objectives (AO2–AO5). Section A asked students to analyse an unseen poem of their choice. Section B required a comparative essay on two poems from the anthology studied across the year. Section C was an imaginative writing task.',
+    framework: 'Edexcel IGCSE English Language and Literature (adapted, Stage 9)',
+    totals: { a: 12, b: 15, c: 23, all: 50 },
+    sections: {
+      a: {
+        name: 'Unseen Poetry',
+        options: [
+          'Option 1 — "Exam Room Silence" by Matthew Higgins (a poem about sitting an exam)',
+          'Option 2 — "Facing It" by Yusef Komunyakaa (a poem about a Vietnam veteran at the memorial wall)',
+        ],
+        questions: [
+          { id:'q1', label:'Q1 — Identify a metaphor and explain its effect',             max:3, aos:'AO2 — language analysis' },
+          { id:'q2', label:'Q2 — How does the poet use contrast or juxtaposition?',       max:2, aos:'AO2 — language and structure' },
+          { id:'q3', label:'Q3 — Identify an example of imagery and explain its effect',  max:3, aos:'AO2 — imagery analysis' },
+          { id:'q4', label:'Q4 — What atmosphere is created by the given line?',           max:2, aos:'AO2 — atmosphere and effect' },
+          { id:'q5', label:'Q5 — How do the final lines show a turning point?',            max:2, aos:'AO2 — structural understanding' },
+        ],
+      },
+      b: {
+        name: 'Anthology Poetry',
+        options: [
+          'Q2 — Dulce et decorum est and War Photographer (traumatic experiences)',
+          'Q3 — Iraqi Nights and another poem from the anthology (loss)',
+        ],
+        bands: [
+          { label:'Level 4', range:'13–15', desc:'Focused, detailed analysis; sustained AO2+AO3; effective comparison; fully relevant examples.' },
+          { label:'Level 3', range:'8–12',  desc:'Understanding of language/form/structure; compares and contrasts with some range; clearly relevant examples.' },
+          { label:'Level 2', range:'4–7',   desc:'Largely descriptive; underdeveloped comparison; some relevant examples.' },
+          { label:'Level 1', range:'1–3',   desc:'Simple; minimal language analysis; little or no comparison.' },
+        ],
+      },
+      c: {
+        name: 'Imaginative Writing',
+        options: [
+          'Q4 — Write about a time when you, or someone you know, stood up for something important',
+          'Q5 — Write about a time when you, or someone you know, had a close encounter with an animal',
+        ],
+        criteria: [
+          { id:'craft', label:'Writing craft & communication (AO4)', max:15, desc:'Content, organisation, vocabulary, tone and style (Levels 0–5)' },
+          { id:'spag',  label:'Technical accuracy — SPaG (AO5)',     max:8,  desc:'Spelling, punctuation and grammar (Levels 0–4)' },
+        ],
+      },
+    },
+    radarAxes: [
+      { label:['Language','Techniques (AO2)'],     key:'langTech', qs:['q1','q3'],       max:6  },
+      { label:['Structural','Understanding (AO2)'], key:'struct',   qs:['q2','q4','q5'],  max:6  },
+      { label:['Comparative','Analysis (AO3)'],     key:'comp',     secB:true,            max:15 },
+      { label:['Creative','Writing (AO4)'],         key:'craft',    crit:['craft'],       max:15 },
+      { label:['Technical','Accuracy (AO5)'],       key:'accuracy', crit:['spag'],        max:8  },
+    ],
   },
 
   // ── Y10 — add exam data here when ready ─────────────────────
@@ -482,7 +560,7 @@ const EXAMS = {
 let EXAM = null;
 
 /* ── App state ───────────────────────────────────────────────── */
-let S = { yearGroup:null, step:1, marks:{}, bMark:0, bWWW:'', bEBI:'', cMarks:{}, cWWW:'', cEBI:'', books:[], name:'', teacher:'', cls:'' };
+let S = { yearGroup:null, step:1, marks:{}, bMark:0, bWWW:'', bEBI:'', cMarks:{}, cWWW:'', cEBI:'', books:[], name:'', teacher:'', cls:'', choices:{a:null,b:null,c:null} };
 let chart = null;
 
 /* ── Year selection ──────────────────────────────────────────── */
@@ -500,10 +578,37 @@ function selectYear(y) {
     `${EXAM.label} English — End of Year Exam Summary`;
 }
 
+/* ── Choice selector helpers ─────────────────────────────────── */
+function renderChoiceField(sectionKey, options, labelText) {
+  const pills = options.map((opt, i) =>
+    `<button type="button" class="choice-pill" id="cpill-${sectionKey}-${i}" onclick="setChoice('${sectionKey}',${i})">${opt}</button>`
+  ).join('');
+  return `<div class="field"><label>${labelText}</label><div class="choice-pills">${pills}</div></div><div style="border-top:1px solid var(--border);margin-bottom:18px"></div>`;
+}
+function setChoice(key, idx) {
+  S.choices[key] = idx;
+  document.querySelectorAll(`[id^="cpill-${key}-"]`).forEach((el, i) => el.classList.toggle('chosen', i === idx));
+}
+
 /* ── Build form questions dynamically ───────────────────────── */
 function buildForms() {
-  // Forms are rebuilt each time the user selects a year and progresses
-  // Called from go(2) after year is confirmed
+  // Choice areas
+  const secAOpts = EXAM.sections.a.options;
+  document.getElementById('secAChoiceArea').innerHTML = secAOpts
+    ? renderChoiceField('a', secAOpts, 'Which poem did you answer?') : '';
+
+  const secBOpts = EXAM.sections.b.options;
+  document.getElementById('secBChoiceArea').innerHTML = secBOpts
+    ? renderChoiceField('b', secBOpts, 'Which question did you answer?') : '';
+
+  const secCOpts = EXAM.sections.c.options;
+  document.getElementById('secCChoiceArea').innerHTML = secCOpts
+    ? renderChoiceField('c', secCOpts, 'Which task did you answer?') : '';
+
+  // Reset choices when rebuilding
+  S.choices = { a:null, b:null, c:null };
+
+  // Section A questions
   const aqc = document.getElementById('secAQuestions');
   aqc.innerHTML = '';
   EXAM.sections.a.questions.forEach(q => {
@@ -519,6 +624,7 @@ function buildForms() {
   });
   document.getElementById('totA').textContent = `0 / ${EXAM.totals.a}`;
 
+  // Section C criteria
   const cqc = document.getElementById('secCCriteria');
   cqc.innerHTML = '';
   EXAM.sections.c.criteria.forEach(c => {
@@ -535,7 +641,7 @@ function buildForms() {
   document.getElementById('totC').textContent = `0 / ${EXAM.totals.c}`;
   document.getElementById('bMarkOf').textContent = `/ ${EXAM.totals.b}`;
 
-  // Update section titles
+  // Section titles
   document.getElementById('secATitle').textContent = `📖 Section A — ${EXAM.sections.a.name}`;
   document.getElementById('secBTitle').textContent = `✍️ Section B — ${EXAM.sections.b.name}`;
   document.getElementById('secCTitle').textContent = `🖊️ Section C — ${EXAM.sections.c.name}`;
@@ -555,13 +661,18 @@ function totC() {
   document.getElementById('totC').textContent = `${t} / ${EXAM.totals.c}`;
 }
 function bandB() {
-  const m = parseInt(document.getElementById('bMark').value)||0;
-  const el = document.getElementById('bandB');
-  if (m>=12) el.innerHTML='<span class="band-pill band-4">Band 4 — High (12–15)</span> Clear, sustained comparison; precise language analysis.';
-  else if(m>=8) el.innerHTML='<span class="band-pill band-3">Band 3 — Mid (8–11)</span> Some comparison; identifies language effects in both texts.';
-  else if(m>=4) el.innerHTML='<span class="band-pill band-2">Band 2 — Low (4–7)</span> Treats texts somewhat separately; limited comparison.';
-  else if(m>=1) el.innerHTML='<span class="band-pill band-1">Band 1 — Minimal (1–3)</span> Brief response; mostly retelling with little analysis.';
-  else el.innerHTML='';
+  const m   = parseInt(document.getElementById('bMark').value)||0;
+  const el  = document.getElementById('bandB');
+  const bands = EXAM.sections.b.bands;
+  if (!bands || m < 1) { el.innerHTML = ''; return; }
+  const matched = bands.find(b => {
+    const [lo, hi] = b.range.split('–').map(Number);
+    return m >= lo && m <= hi;
+  });
+  if (!matched) { el.innerHTML = ''; return; }
+  const n = matched.label.match(/\d/)?.[0];
+  const css = n==='4'?'band-4':n==='3'?'band-3':n==='2'?'band-2':'band-1';
+  el.innerHTML = `<span class="band-pill ${css}">${matched.label} (${matched.range})</span> ${matched.desc}`;
 }
 function scores() {
   const a = EXAM.sections.a.questions.reduce((s,q)=>s+(S.marks[q.id]||0),0);
@@ -652,20 +763,49 @@ function collect() {
   S.books = [document.getElementById('bk1').value.trim(),
              document.getElementById('bk2').value.trim(),
              document.getElementById('bk3').value.trim()];
+  // choices are set directly by setChoice() — just ensure they exist
+  S.choices = S.choices || { a:null, b:null, c:null };
 }
 
 /* ── Build AI prompt ─────────────────────────────────────────── */
 function buildPrompt() {
-  const sc  = scores();
-  const pct = Math.round(sc.tot / EXAM.totals.all * 100);
+  const sc    = scores();
+  const pct   = Math.round(sc.tot / EXAM.totals.all * 100);
   const grade = getGrade(pct);
-  const bandLabel = sc.b>=12?'Band 4 – High (12–15)':sc.b>=8?'Band 3 – Mid (8–11)':sc.b>=4?'Band 2 – Low (4–7)':'Band 1 – Minimal (1–3)';
-  const qLines = EXAM.sections.a.questions.map(q=>`  ${q.label}: ${S.marks[q.id]}/${q.max} (AOs: ${q.aos})`).join('\n');
-  const cLines = EXAM.sections.c.criteria.map(c=>`  ${c.label}: ${S.cMarks[c.id]}/${c.max}`).join('\n');
-  const radarSummary = EXAM.radarAxes.map((ax,i)=>`  ${ax.label.join(' ')}: ${radarPcts()[i]}%`).join('\n');
+  const ages  = { 'Year 7':'11–12', 'Year 8':'12–13', 'Year 9':'13–14', 'Year 10':'14–15' };
+
+  // Band label for Section B — use exam-specific bands if available
+  let bandLabel = '';
+  if (EXAM.sections.b.bands) {
+    const matched = EXAM.sections.b.bands.find(b => {
+      const [lo, hi] = b.range.split('–').map(Number);
+      return sc.b >= lo && sc.b <= hi;
+    });
+    bandLabel = matched ? `${matched.label} (${matched.range})` : '';
+  }
+
+  // Section A — include chosen poem/option if student selected one
+  const choiceA = (EXAM.sections.a.options && S.choices.a !== null)
+    ? `\nPoem/option answered: ${EXAM.sections.a.options[S.choices.a]}` : '';
+  const choiceB = (EXAM.sections.b.options && S.choices.b !== null)
+    ? `\nQuestion answered: ${EXAM.sections.b.options[S.choices.b]}` : '';
+  const choiceC = (EXAM.sections.c.options && S.choices.c !== null)
+    ? `\nTask answered: ${EXAM.sections.c.options[S.choices.c]}` : '';
+
+  const qLines = EXAM.sections.a.questions.map(q =>
+    `  ${q.label}: ${S.marks[q.id]}/${q.max} (${q.aos})`).join('\n');
+  const cLines = EXAM.sections.c.criteria.map(c =>
+    `  ${c.label}: ${S.cMarks[c.id]}/${c.max}`).join('\n');
+  const radarSummary = EXAM.radarAxes.map((ax,i) =>
+    `  ${ax.label.join(' ')}: ${radarPcts()[i]}%`).join('\n');
   const favs = S.books.filter(Boolean).join(', ') || 'not provided';
 
-  return `You are a supportive English teacher writing a personalised end-of-year exam report for a ${EXAM.label} student (age ${EXAM.label === 'Year 7' ? '11–12' : EXAM.label === 'Year 8' ? '12–13' : EXAM.label === 'Year 9' ? '13–14' : '14–15'}). Your tone should be warm, encouraging, specific, and age-appropriate.
+  // Book guidance varies by year group maturity
+  const bookGuidance = S.yearGroup === 'Y9' || S.yearGroup === 'Y10'
+    ? 'This student is 13–15 years old — feel free to recommend from the more challenging sections of the list if their stated favourites suggest readiness.'
+    : 'Prioritise accessible (lighter-band) titles unless the student\'s stated favourites suggest they are ready for more challenging texts.';
+
+  return `You are a supportive English teacher writing a personalised end-of-year exam report for a ${EXAM.label} student (age ${ages[EXAM.label]||''}). Your tone should be warm, encouraging, specific, and age-appropriate.
 
 STUDENT: ${S.name}${S.teacher?` | Teacher: ${S.teacher}`:''}${S.cls?` | Class: ${S.cls}`:''}
 YEAR GROUP: ${EXAM.label}
@@ -674,9 +814,9 @@ FRAMEWORK: ${EXAM.framework}
 EXAM CONTEXT: ${EXAM.examContext}
 
 RESULTS:
-Section A (${EXAM.sections.a.name}): ${sc.a}/${EXAM.totals.a} (${Math.round(sc.a/EXAM.totals.a*100)}%)
-Section B (${EXAM.sections.b.name}): ${sc.b}/${EXAM.totals.b} (${Math.round(sc.b/EXAM.totals.b*100)}%) — ${bandLabel}
-Section C (${EXAM.sections.c.name}): ${sc.c}/${EXAM.totals.c} (${Math.round(sc.c/EXAM.totals.c*100)}%)
+Section A (${EXAM.sections.a.name}): ${sc.a}/${EXAM.totals.a} (${Math.round(sc.a/EXAM.totals.a*100)}%)${choiceA}
+Section B (${EXAM.sections.b.name}): ${sc.b}/${EXAM.totals.b} (${Math.round(sc.b/EXAM.totals.b*100)}%)${bandLabel?' — '+bandLabel:''}${choiceB}
+Section C (${EXAM.sections.c.name}): ${sc.c}/${EXAM.totals.c} (${Math.round(sc.c/EXAM.totals.c*100)}%)${choiceC}
 Overall: ${sc.tot}/${EXAM.totals.all} (${pct}%) — Grade: ${grade.label} (${grade.range})
 
 SECTION A BREAKDOWN:
@@ -691,21 +831,21 @@ ${cLines}
 What Went Well: "${S.cWWW||'Not provided'}"
 Even Better If: "${S.cEBI||'Not provided'}"
 
-CAMBRIDGE SKILL AREAS (% of available marks):
+SKILL AREAS — % of available marks:
 ${radarSummary}
 
 STUDENT'S FAVOURITE BOOKS: ${favs}
 
-SCHOOL READING LIST (Y7-appropriate; only recommend from this list):
+SCHOOL READING LIST (only recommend from this list):
 ${CFG.readingList.map((b,i)=>`${i+1}. ${b}`).join('\n')}
 
 Write the report with EXACTLY these four headings (include the ## symbols):
 
 ## STRENGTHS
-2–3 paragraphs. Identify genuine strengths. Reference specific questions, Cambridge LO codes, and marks. Acknowledge the overall grade (${grade.label}) positively. Be warm and affirming.
+2–3 paragraphs. Be specific — reference particular questions, assessment objective codes, and marks. Acknowledge the overall grade (${grade.label}) positively. Warm and affirming tone.
 
 ## AREAS FOR DEVELOPMENT
-2–3 paragraphs. Identify 2–3 areas to improve. Be constructive. Reference Cambridge LO codes and teacher EBI comments where relevant.
+2–3 paragraphs. Identify 2–3 areas to work on. Be constructive. Reference assessment objectives and teacher EBI comments where relevant.
 
 ## HOLIDAY IMPROVEMENT ACTIONS
 Exactly 3 specific, practical, age-appropriate actions — completely optional. Format:
@@ -714,7 +854,7 @@ ACTION 2: [short title] | [1–2 sentences]
 ACTION 3: [short title] | [1–2 sentences]
 
 ## BOOK RECOMMENDATIONS
-Exactly 3 books from the list above only. Prioritise lighter-band titles unless favourites suggest readiness for more challenge. Format:
+Exactly 3 books from the list above only. ${bookGuidance} Format:
 BOOK 1: [Title — Author] | [1–2 sentences connecting to stated favourites]
 BOOK 2: [Title — Author] | [1–2 sentences]
 BOOK 3: [Title — Author] | [1–2 sentences]`;
@@ -778,10 +918,19 @@ function render(parsed) {
   window.scrollTo({top:0, behavior:'smooth'});
 }
 
+// Convert markdown bold/italic from AI response to HTML
+function md(s) {
+  return s
+    .replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*([^*\n]+)\*/g, '<em>$1</em>');
+}
+
 function drawParas(id, txt) {
   const el = document.getElementById(id);
   if (!txt) { el.innerHTML='<p>Content not available.</p>'; return; }
-  el.innerHTML = txt.split(/\n\n+/).filter(p=>p.trim()).map(p=>`<p>${p.trim().replace(/\n/g,' ')}</p>`).join('');
+  el.innerHTML = txt.split(/\n\n+/).filter(p=>p.trim())
+    .map(p=>`<p>${md(p.trim().replace(/\n/g,' '))}</p>`).join('');
 }
 function drawActions(id, txt) {
   const el = document.getElementById(id);
@@ -790,9 +939,9 @@ function drawActions(id, txt) {
   let m, html='', n=0;
   while ((m=re.exec(txt))!==null) {
     n++;
-    html += `<div class="action-item"><strong>${n}. ${m[1].trim().replace(/\*+/g,'')}</strong>${m[2].trim().replace(/\n/g,' ')}</div>`;
+    html += `<div class="action-item"><strong>${n}. ${m[1].trim().replace(/\*+/g,'')}</strong>${md(m[2].trim().replace(/\n/g,' '))}</div>`;
   }
-  el.innerHTML = html || `<div class="action-item">${txt}</div>`;
+  el.innerHTML = html || `<div class="action-item">${md(txt)}</div>`;
 }
 function drawBooks(id, txt) {
   const el = document.getElementById(id);
@@ -801,9 +950,9 @@ function drawBooks(id, txt) {
   let m, html='', n=0;
   while ((m=re.exec(txt))!==null) {
     n++;
-    html += `<div class="book-item"><div class="book-num">${n}</div><div class="book-info"><strong>${m[1].trim().replace(/\*+/g,'')}</strong><p>${m[2].trim().replace(/\n/g,' ')}</p></div></div>`;
+    html += `<div class="book-item"><div class="book-num">${n}</div><div class="book-info"><strong>${m[1].trim().replace(/\*+/g,'')}</strong><p>${md(m[2].trim().replace(/\n/g,' '))}</p></div></div>`;
   }
-  el.innerHTML = html || `<div class="book-item"><div class="book-info"><p>${txt}</p></div></div>`;
+  el.innerHTML = html || `<div class="book-item"><div class="book-info"><p>${md(txt)}</p></div></div>`;
 }
 function drawRadar() {
   const ctx = document.getElementById('radar').getContext('2d');
@@ -870,28 +1019,24 @@ async function generate() {
 }
 
 /* ── PDF ─────────────────────────────────────────────────────── */
-async function dlPDF() {
-  const btn = document.getElementById('dlBtn');
-  btn.disabled = true; btn.textContent = 'Preparing PDF…';
-  try {
-    const canvas = document.getElementById('radar');
-    const imgData = canvas.toDataURL('image/png');
-    const tmp = document.createElement('img');
-    tmp.src = imgData; tmp.style.cssText = canvas.style.cssText;
-    tmp.width = canvas.offsetWidth; tmp.height = canvas.offsetHeight;
-    canvas.parentNode.replaceChild(tmp, canvas);
-    const fname = `${(S.name||'Student').replace(/\s+/g,'_')}_${S.yearGroup}_English_Summary.pdf`;
-    await html2pdf().set({
-      margin:[10,10,12,10], filename:fname,
-      image:{type:'jpeg',quality:0.96},
-      html2canvas:{scale:2, useCORS:true, backgroundColor:'#f4f6f9'},
-      jsPDF:{unit:'mm', format:'a4', orientation:'portrait'},
-      pagebreak:{mode:['avoid-all','css','legacy']},
-    }).from(document.getElementById('results')).save();
-    tmp.parentNode.replaceChild(canvas, tmp);
-  } finally {
-    btn.disabled = false; btn.textContent = '⬇ Download PDF';
-  }
+function dlPDF() {
+  // Snapshot the radar chart so it prints correctly
+  const canvas = document.getElementById('radar');
+  const w = canvas.offsetWidth || 360;
+  const h = canvas.offsetHeight || 360;
+  const tmp = document.createElement('img');
+  tmp.src = canvas.toDataURL('image/png');
+  tmp.id  = 'radarPrintImg';
+  tmp.style.cssText = `width:${w}px;height:${h}px;display:block;margin:0 auto`;
+  canvas.parentNode.replaceChild(tmp, canvas);
+
+  window.print();
+
+  // Restore the live chart after the print dialog closes
+  setTimeout(() => {
+    const img = document.getElementById('radarPrintImg');
+    if (img) img.parentNode.replaceChild(canvas, img);
+  }, 1500);
 }
 
 function startOver() {
