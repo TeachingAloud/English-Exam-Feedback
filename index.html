@@ -3,59 +3,55 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Y7 English — Exam Summary Generator</title>
+  <title>English Exam Summary Generator</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
     :root {
-      --navy: #1a3a5c;
-      --navy-light: #2a5080;
-      --gold: #c9a227;
-      --gold-light: #f0e0a0;
-      --green: #217a45;
-      --amber: #b45309;
-      --red: #991b1b;
-      --bg: #f4f6f9;
-      --card: #ffffff;
-      --border: #d8e0eb;
-      --text: #1e2d3d;
-      --muted: #6b7a8d;
-      --radius: 10px;
+      --navy: #1a3a5c; --navy-light: #2a5080;
+      --gold: #c9a227; --green: #217a45; --amber: #b45309;
+      --bg: #f4f6f9; --card: #fff; --border: #d8e0eb;
+      --text: #1e2d3d; --muted: #6b7a8d; --radius: 10px;
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; font-size: 15px; line-height: 1.5; }
 
-    /* ── Header ──────────────────────────────────── */
-    .site-header { background: var(--navy); color: #fff; padding: 18px 32px; display: flex; align-items: center; gap: 16px; }
-    .site-header h1 { font-size: 1.2rem; font-weight: 700; letter-spacing: -0.01em; }
+    .site-header { background: var(--navy); color: #fff; padding: 18px 32px; }
+    .site-header h1 { font-size: 1.2rem; font-weight: 700; }
     .site-header p  { font-size: 0.82rem; opacity: 0.72; margin-top: 2px; }
 
-    /* ── Layout ──────────────────────────────────── */
     .wrap { max-width: 780px; margin: 0 auto; padding: 28px 16px 48px; }
 
-    /* ── Step dots ───────────────────────────────── */
-    .stepper { display: flex; align-items: center; justify-content: center; gap: 0; margin-bottom: 28px; }
+    .stepper { display: flex; align-items: center; justify-content: center; margin-bottom: 28px; }
     .step-dot { width: 34px; height: 34px; border-radius: 50%; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; color: var(--muted); background: #fff; flex-shrink: 0; transition: all .2s; }
     .step-dot.active { background: var(--navy); border-color: var(--navy); color: #fff; }
     .step-dot.done   { background: var(--green); border-color: var(--green); color: #fff; }
     .step-line { width: 28px; height: 2px; background: var(--border); flex-shrink: 0; }
 
-    /* ── Card ────────────────────────────────────── */
     .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px 28px; margin-bottom: 16px; box-shadow: 0 1px 6px rgba(0,0,0,.05); }
     .card-title { font-size: 1.05rem; font-weight: 700; color: var(--navy); margin-bottom: 2px; }
     .card-sub   { font-size: 0.82rem; color: var(--muted); padding-bottom: 16px; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
 
-    /* ── Form elements ───────────────────────────── */
     .field { margin-bottom: 16px; }
     label { display: block; font-size: 0.88rem; font-weight: 600; margin-bottom: 5px; }
-    input[type=text], input[type=number], textarea, select {
+    input[type=text], input[type=number], textarea {
       width: 100%; padding: 9px 13px; border: 1px solid var(--border); border-radius: 7px;
       font: inherit; color: var(--text); transition: border-color .15s, box-shadow .15s;
     }
-    input:focus, textarea:focus, select:focus { outline: none; border-color: var(--navy); box-shadow: 0 0 0 3px rgba(26,58,92,.1); }
+    input:focus, textarea:focus { outline: none; border-color: var(--navy); box-shadow: 0 0 0 3px rgba(26,58,92,.1); }
     textarea { min-height: 80px; resize: vertical; }
 
-    /* ── Question rows ───────────────────────────── */
+    /* Year group selector */
+    .year-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+    @media (max-width: 480px) { .year-grid { grid-template-columns: repeat(2, 1fr); } }
+    .yr-btn { padding: 16px 8px; border-radius: var(--radius); border: 2px solid var(--border); background: #fff; font: inherit; font-size: 1rem; font-weight: 700; color: var(--muted); cursor: pointer; transition: all .15s; text-align: center; }
+    .yr-btn:hover { border-color: var(--navy); color: var(--navy); }
+    .yr-btn.selected { background: var(--navy); border-color: var(--navy); color: #fff; }
+    .yr-btn.coming-soon { opacity: .6; }
+    .yr-btn.coming-soon.selected { background: var(--muted); border-color: var(--muted); color: #fff; }
+    .yr-tag { display: block; font-size: 0.68rem; font-weight: 400; margin-top: 3px; opacity: .75; }
+    .coming-banner { background: #f0f4f9; border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; font-size: 0.88rem; color: var(--muted); text-align: center; margin-bottom: 16px; display: none; }
+
     .q-row { display: grid; grid-template-columns: 1fr 100px; gap: 12px; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--border); }
     .q-row:last-child { border-bottom: none; }
     .q-label { font-size: 0.87rem; }
@@ -64,36 +60,31 @@
     .q-entry input { width: 56px; text-align: center; padding: 7px 4px; }
     .q-entry .of { font-size: 0.82rem; color: var(--muted); white-space: nowrap; }
 
-    /* ── Section total ───────────────────────────── */
     .sec-total { margin-top: 14px; padding-top: 14px; border-top: 2px solid var(--border); display: flex; justify-content: flex-end; align-items: center; gap: 10px; font-size: 0.88rem; color: var(--muted); }
     .sec-total strong { color: var(--navy); font-size: 1rem; }
 
-    /* ── Feedback grid ───────────────────────────── */
     .fb-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
     @media (max-width: 580px) { .fb-grid { grid-template-columns: 1fr; } }
     .fb-www label { color: var(--green); }
     .fb-ebi label { color: var(--amber); }
 
-    /* ── Band pill ───────────────────────────────── */
     .band-pill { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.78rem; font-weight: 700; margin-top: 6px; }
     .band-4 { background: #d1fae5; color: #065f46; }
     .band-3 { background: #fef3c7; color: #92400e; }
     .band-2 { background: #fee2e2; color: #991b1b; }
     .band-1 { background: #f3f4f6; color: #374151; }
 
-    /* ── Buttons ─────────────────────────────────── */
     .btn { display: inline-flex; align-items: center; gap: 7px; padding: 10px 22px; border-radius: 8px; font: inherit; font-size: 0.9rem; font-weight: 600; cursor: pointer; border: none; transition: filter .15s, opacity .15s; }
     .btn:disabled { opacity: .5; cursor: not-allowed; }
-    .btn-navy   { background: var(--navy); color: #fff; }
+    .btn-navy  { background: var(--navy); color: #fff; }
     .btn-navy:not(:disabled):hover { filter: brightness(1.15); }
-    .btn-ghost  { background: transparent; color: var(--text); border: 1px solid var(--border); }
+    .btn-ghost { background: transparent; color: var(--text); border: 1px solid var(--border); }
     .btn-ghost:hover { background: var(--bg); }
-    .btn-gold   { background: var(--gold); color: #fff; }
+    .btn-gold  { background: var(--gold); color: #fff; }
     .btn-gold:not(:disabled):hover { filter: brightness(1.1); }
     .btn-lg { padding: 13px 30px; font-size: 1rem; }
     .nav { display: flex; justify-content: space-between; align-items: center; margin-top: 20px; }
 
-    /* ── Loading ─────────────────────────────────── */
     .overlay { display: none; position: fixed; inset: 0; background: rgba(255,255,255,.88); z-index: 200; flex-direction: column; align-items: center; justify-content: center; gap: 14px; backdrop-filter: blur(3px); }
     .overlay.on { display: flex; }
     .spinner { width: 44px; height: 44px; border: 4px solid var(--border); border-top-color: var(--navy); border-radius: 50%; animation: spin .75s linear infinite; }
@@ -101,23 +92,19 @@
     .overlay p { font-weight: 600; color: var(--navy); }
     .overlay small { color: var(--muted); font-size: 0.83rem; }
 
-    /* ── Error ───────────────────────────────────── */
     .error-box { background: #fef2f2; border: 1px solid #fca5a5; border-radius: 8px; padding: 12px 16px; color: #991b1b; font-size: 0.88rem; margin-top: 12px; }
 
-    /* ── Results ─────────────────────────────────── */
     #results { display: none; }
     .r-hero { background: linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%); color: #fff; border-radius: var(--radius); padding: 24px 28px; margin-bottom: 16px; }
     .r-hero h2 { font-size: 1.35rem; font-weight: 700; }
     .r-hero p  { opacity: .75; font-size: 0.85rem; margin-top: 3px; }
     .score-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 16px; }
     .score-cell { background: rgba(255,255,255,.12); border-radius: 8px; padding: 12px; text-align: center; }
-    .score-cell .num { font-size: 1.65rem; font-weight: 800; }
+    .score-cell .num { font-size: 1.1rem; font-weight: 800; }
     .score-cell .lbl { font-size: 0.72rem; text-transform: uppercase; letter-spacing: .07em; opacity: .75; margin-top: 2px; }
 
-    /* ── Chart ───────────────────────────────────── */
     .chart-wrap { max-width: 380px; margin: 0 auto; padding: 8px 0; }
 
-    /* ── Marks table ─────────────────────────────── */
     .mt { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
     .mt thead th { background: var(--navy); color: #fff; padding: 8px 12px; text-align: left; font-weight: 600; }
     .mt thead th:not(:first-child) { text-align: right; }
@@ -130,25 +117,20 @@
     .pct-bar { display: inline-block; width: 48px; height: 6px; background: var(--border); border-radius: 3px; vertical-align: middle; margin-left: 6px; overflow: hidden; }
     .pct-fill { height: 100%; background: var(--gold); border-radius: 3px; }
 
-    /* ── Analysis sections ───────────────────────── */
     .analysis p { font-size: 0.9rem; line-height: 1.75; color: var(--text); margin-bottom: 10px; }
     .analysis p:last-child { margin-bottom: 0; }
 
-    /* ── Action items ────────────────────────────── */
     .action-item { background: #f0fdf4; border-left: 4px solid var(--green); border-radius: 0 8px 8px 0; padding: 11px 16px; margin-bottom: 10px; font-size: 0.88rem; line-height: 1.65; }
     .action-item strong { color: var(--green); display: block; margin-bottom: 3px; }
 
-    /* ── Book cards ──────────────────────────────── */
     .book-item { display: flex; gap: 14px; background: var(--bg); border: 1px solid var(--border); border-left: 4px solid var(--gold); border-radius: 0 8px 8px 0; padding: 13px 16px; margin-bottom: 10px; }
     .book-num { font-size: 1.4rem; font-weight: 800; color: var(--gold); line-height: 1; margin-top: 2px; }
     .book-info strong { display: block; color: var(--navy); font-size: 0.9rem; margin-bottom: 3px; }
     .book-info p { font-size: 0.85rem; color: var(--muted); margin: 0; line-height: 1.6; }
 
-    /* ── Section header ornament ─────────────────── */
     .sec-heading { display: flex; align-items: center; gap: 10px; font-size: 1.05rem; font-weight: 700; color: var(--navy); margin-bottom: 4px; }
     .sec-heading::after { content: ''; flex: 1; height: 2px; background: linear-gradient(to right, var(--gold), transparent); }
 
-    /* ── No-print ────────────────────────────────── */
     @media print { .no-print { display: none !important; } }
   </style>
 </head>
@@ -156,7 +138,7 @@
 
 <header class="site-header">
   <div>
-    <h1>Y7 English — End of Year Exam Summary</h1>
+    <h1 id="headerTitle">English — End of Year Exam Summary</h1>
     <p>Enter your marks and feedback to generate your personalised report</p>
   </div>
 </header>
@@ -169,7 +151,6 @@
 
 <div class="wrap">
 
-  <!-- Stepper -->
   <div class="stepper no-print" id="stepper">
     <div class="step-dot active" id="sd1">1</div><div class="step-line"></div>
     <div class="step-dot" id="sd2">2</div><div class="step-line"></div>
@@ -178,25 +159,37 @@
     <div class="step-dot" id="sd5">5</div>
   </div>
 
-  <!-- ── PAGE 1: Student details ────────────────── -->
+  <!-- PAGE 1: Year group + student details -->
   <div id="pg1">
     <div class="card">
       <div class="card-title">👋 Welcome</div>
-      <div class="card-sub">Enter your details to get started. Only your name is required.</div>
+      <div class="card-sub">Select your year group, then enter your details.</div>
+
+      <label style="margin-bottom:10px">Year group *</label>
+      <div class="year-grid">
+        <button class="yr-btn" id="yr-Y7"  onclick="selectYear('Y7')">Year 7<span class="yr-tag">Available</span></button>
+        <button class="yr-btn coming-soon" id="yr-Y8"  onclick="selectYear('Y8')">Year 8<span class="yr-tag">Coming soon</span></button>
+        <button class="yr-btn coming-soon" id="yr-Y9"  onclick="selectYear('Y9')">Year 9<span class="yr-tag">Coming soon</span></button>
+        <button class="yr-btn coming-soon" id="yr-Y10" onclick="selectYear('Y10')">Year 10<span class="yr-tag">Coming soon</span></button>
+      </div>
+      <div class="coming-banner" id="comingBanner">
+        This year group's exam summary will be available soon — check back at the start of next term!
+      </div>
+
       <div class="field"><label for="sName">Full name *</label><input type="text" id="sName" placeholder="e.g. Emma Thompson"></div>
       <div class="field"><label for="sTeacher">English teacher</label><input type="text" id="sTeacher" placeholder="e.g. Mrs Smith"></div>
       <div class="field"><label for="sClass">Class</label><input type="text" id="sClass" placeholder="e.g. 7A"></div>
     </div>
-    <div class="nav"><span></span><button class="btn btn-navy" onclick="go(2)">Next: Section A &rarr;</button></div>
+    <div class="nav"><span></span><button class="btn btn-navy" id="nextBtn1" onclick="go(2)">Next: Section A &rarr;</button></div>
   </div>
 
-  <!-- ── PAGE 2: Section A ──────────────────────── -->
+  <!-- PAGE 2: Section A -->
   <div id="pg2" style="display:none">
     <div class="card">
-      <div class="card-title">📖 Section A — Reading Comprehension</div>
-      <div class="card-sub">Enter the mark you received for each question. The number in brackets is the maximum.</div>
+      <div class="card-title" id="secATitle">📖 Section A — Reading Comprehension</div>
+      <div class="card-sub">Enter the mark you received for each question.</div>
       <div id="secAQuestions"></div>
-      <div class="sec-total">Section A total: <strong id="totA">0 / 21</strong></div>
+      <div class="sec-total">Section A total: <strong id="totA">0 / —</strong></div>
     </div>
     <div class="nav">
       <button class="btn btn-ghost" onclick="go(1)">&larr; Back</button>
@@ -204,18 +197,18 @@
     </div>
   </div>
 
-  <!-- ── PAGE 3: Section B ──────────────────────── -->
+  <!-- PAGE 3: Section B -->
   <div id="pg3" style="display:none">
     <div class="card">
-      <div class="card-title">✍️ Section B — Comparative Writing</div>
-      <div class="card-sub">Enter your total mark out of 15, then your teacher's written feedback.</div>
+      <div class="card-title" id="secBTitle">✍️ Section B — Comparative Writing</div>
+      <div class="card-sub">Enter your total mark, then your teacher's written feedback.</div>
       <div class="field">
-        <label for="bMark">Section B mark (0–15)</label>
-        <div class="q-entry"><input type="number" id="bMark" min="0" max="15" value="0" oninput="clamp(this,15);bandB()"><span class="of">/ 15</span></div>
+        <label for="bMark">Section B mark</label>
+        <div class="q-entry"><input type="number" id="bMark" min="0" max="15" value="0" oninput="clamp(this,EXAM.totals.b);bandB()"><span class="of" id="bMarkOf">/ 15</span></div>
         <div id="bandB"></div>
       </div>
       <div class="fb-grid" style="margin-top:18px">
-        <div class="field fb-www"><label>✓ What Went Well</label><textarea id="bWWW" placeholder="e.g. Your comparison of the two creatures was clear and well-structured…"></textarea></div>
+        <div class="field fb-www"><label>✓ What Went Well</label><textarea id="bWWW" placeholder="e.g. Your comparison was clear and well-structured…"></textarea></div>
         <div class="field fb-ebi"><label>△ Even Better If</label><textarea id="bEBI" placeholder="e.g. Try to include more quotations from Text B…"></textarea></div>
       </div>
     </div>
@@ -225,15 +218,15 @@
     </div>
   </div>
 
-  <!-- ── PAGE 4: Section C ──────────────────────── -->
+  <!-- PAGE 4: Section C -->
   <div id="pg4" style="display:none">
     <div class="card">
-      <div class="card-title">🖊️ Section C — Creative Writing</div>
-      <div class="card-sub">Enter your mark for each criterion, then your teacher's written feedback.</div>
+      <div class="card-title" id="secCTitle">🖊️ Section C — Creative Writing</div>
+      <div class="card-sub">Enter your mark for each criterion, then your teacher's feedback.</div>
       <div id="secCCriteria"></div>
-      <div class="sec-total">Section C total: <strong id="totC">0 / 15</strong></div>
+      <div class="sec-total">Section C total: <strong id="totC">0 / —</strong></div>
       <div class="fb-grid" style="margin-top:20px;padding-top:18px;border-top:1px solid var(--border)">
-        <div class="field fb-www"><label>✓ What Went Well</label><textarea id="cWWW" placeholder="e.g. Excellent descriptive language and a strong, confident opening…"></textarea></div>
+        <div class="field fb-www"><label>✓ What Went Well</label><textarea id="cWWW" placeholder="e.g. Excellent descriptive language and a strong opening…"></textarea></div>
         <div class="field fb-ebi"><label>△ Even Better If</label><textarea id="cEBI" placeholder="e.g. Try to vary your sentence structures more…"></textarea></div>
       </div>
     </div>
@@ -243,18 +236,18 @@
     </div>
   </div>
 
-  <!-- ── PAGE 5: Books + generate ──────────────── -->
+  <!-- PAGE 5: Books + generate -->
   <div id="pg5" style="display:none">
     <div class="card">
       <div class="card-title">📚 Your Favourite Books</div>
-      <div class="card-sub">Tell us three books you've loved — we'll use this to recommend summer reads from our reading lists.</div>
+      <div class="card-sub">Tell us three books you've loved — we'll recommend summer reads from our reading list.</div>
       <div class="field"><label>Favourite book #1</label><input type="text" id="bk1" placeholder="Title (and author if you know it)"></div>
       <div class="field"><label>Favourite book #2</label><input type="text" id="bk2" placeholder="Title (and author if you know it)"></div>
       <div class="field"><label>Favourite book #3</label><input type="text" id="bk3" placeholder="Title (and author if you know it)"></div>
     </div>
     <div class="card" style="background:linear-gradient(135deg,#1a3a5c,#2a5080);color:#fff;border:none">
       <div style="font-size:1.05rem;font-weight:700;margin-bottom:6px">🎯 Ready to generate your report?</div>
-      <p style="opacity:.8;font-size:0.87rem;line-height:1.65">Your personalised summary will include a performance radar chart, strengths and development analysis mapped to Cambridge Stage 7 learning objectives, optional holiday improvement tips, and summer reading recommendations.</p>
+      <p style="opacity:.8;font-size:0.87rem;line-height:1.65">Your personalised summary will include a performance radar chart, strengths and development analysis mapped to Cambridge learning objectives, optional holiday improvement tips, and summer reading recommendations.</p>
       <div id="genErr"></div>
     </div>
     <div class="nav">
@@ -263,84 +256,70 @@
     </div>
   </div>
 
-  <!-- ── RESULTS ────────────────────────────────── -->
+  <!-- RESULTS -->
   <div id="results">
-
-    <!-- Hero -->
     <div class="r-hero">
       <h2 id="rName">Exam Summary</h2>
       <p id="rSub"></p>
       <div id="rGrade" style="margin:12px 0 4px"></div>
       <div class="score-row">
-        <div class="score-cell"><div class="num" id="rTotal" style="font-size:1.1rem">—</div><div class="lbl">Total / 51</div></div>
-        <div class="score-cell"><div class="num" id="rPct" style="font-size:1.1rem">—</div><div class="lbl">Percentage</div></div>
-        <div class="score-cell"><div class="num" id="rABC" style="font-size:1.1rem">—</div><div class="lbl">A / B / C</div></div>
+        <div class="score-cell"><div class="num" id="rTotal">—</div><div class="lbl" id="rTotalLbl">Total</div></div>
+        <div class="score-cell"><div class="num" id="rPct">—</div><div class="lbl">Percentage</div></div>
+        <div class="score-cell"><div class="num" id="rABC">—</div><div class="lbl">A / B / C</div></div>
       </div>
     </div>
 
-    <!-- Radar chart -->
     <div class="card">
       <div class="sec-heading">📊 Performance Profile</div>
-      <p style="font-size:0.83rem;color:var(--muted);margin-bottom:16px">Your scores across the key Cambridge Stage 7 skill areas, shown as a percentage of available marks.</p>
+      <p style="font-size:0.83rem;color:var(--muted);margin-bottom:16px">Your scores across the key Cambridge skill areas, shown as a percentage of available marks.</p>
       <div class="chart-wrap"><canvas id="radar"></canvas></div>
     </div>
 
-    <!-- Marks table -->
     <div class="card">
       <div class="sec-heading">📋 Mark Breakdown</div>
       <table class="mt" id="marksTable"></table>
     </div>
 
-    <!-- Strengths -->
     <div class="card">
       <div class="sec-heading">💪 Strengths</div>
       <div class="analysis" id="rStrengths"></div>
     </div>
 
-    <!-- Development -->
     <div class="card">
       <div class="sec-heading">🎯 Areas for Development</div>
       <div class="analysis" id="rDev"></div>
     </div>
 
-    <!-- Actions -->
     <div class="card">
       <div class="sec-heading">🏖️ Optional Holiday Improvement Actions</div>
-      <p style="font-size:0.82rem;color:var(--muted);margin-bottom:14px;font-style:italic">These are completely optional — only try them if you'd like to get ahead over the holidays!</p>
+      <p style="font-size:0.82rem;color:var(--muted);margin-bottom:14px;font-style:italic">Completely optional — only if you'd like to get ahead over the holidays!</p>
       <div id="rActions"></div>
     </div>
 
-    <!-- Books -->
     <div class="card">
       <div class="sec-heading">📚 Summer Reading Recommendations</div>
       <p style="font-size:0.82rem;color:var(--muted);margin-bottom:14px">Based on books you've told us you love.</p>
       <div id="rBooks"></div>
     </div>
 
-    <!-- Actions bar -->
     <div style="display:flex;gap:12px;justify-content:center;margin:20px 0" class="no-print">
       <button class="btn btn-navy btn-lg" onclick="dlPDF()" id="dlBtn">⬇ Download PDF</button>
       <button class="btn btn-ghost" onclick="startOver()">Start Over</button>
     </div>
+  </div>
 
-  </div><!-- /results -->
 </div><!-- /wrap -->
 
 <script>
 /* ══════════════════════════════════════════════════════════════
-   CONFIGURATION  —  teacher fills these in before deploying
+   CONFIGURATION
    ══════════════════════════════════════════════════════════════ */
 const CFG = {
-  // API key is stored securely in Netlify environment variables — do not add it here
-
-  // AI model (haiku = fast & affordable; change to claude-sonnet-4-6 for deeper analysis)
   model: 'claude-haiku-4-5-20251001',
 
-  // ── READING LIST (Senior School — Y7 appropriate titles only) ──
-  // Excludes the darker red and blue maturity bands from the school list.
-  // Format: "Title — Author"
+  // School reading list — Y7-appropriate titles (excludes most mature bands)
   readingList: [
-    // Green band — most accessible
+    // Green band
     'Wonder — R.J. Palacio',
     'The Boy at the Back of the Class — Onjali Q. Raúf',
     'The Goldfish Boy — Lisa Thompson',
@@ -381,7 +360,7 @@ const CFG = {
     'The Outsiders — S.E. Hinton',
     'Life of Pi — Yann Martel',
     'Northern Lights — Philip Pullman',
-    // Orange band — more challenging
+    // Orange band
     'The Book Thief — Markus Zusak',
     'Roll of Thunder, Hear My Cry — Mildred D. Taylor',
     'Anne of Green Gables — L.M. Montgomery',
@@ -404,7 +383,7 @@ const CFG = {
     'Great Expectations — Charles Dickens',
     'Persepolis — Marjane Satrapi',
     'The Kite Runner — Khaled Hosseini',
-    // Read the World — YA-appropriate titles
+    // Read the World — YA-appropriate
     'The Marrow Thieves — Cherie Dimaline',
     'Undocumented: A Worker\'s Fight — Duncan Tonatiuh',
     'The Absolutely True Diary of a Part-time Indian — Sherman Alexie',
@@ -416,35 +395,7 @@ const CFG = {
 };
 /* ══════════════════════════════════════════════════════════════ */
 
-/* ── Exam structure ──────────────────────────────────────────── */
-const QS = [
-  { id:'q1',  label:'Q1 — Two words showing the Sirens\' intensity of danger',          max:2, aos:'7Ri.03' },
-  { id:'q2',  label:'Q2 — Word/phrase suggesting false pleasantness (lines 13–14)',      max:1, aos:'7Ri.04' },
-  { id:'q3',  label:'Q3 — Identify the sentence type (tick-box)',                        max:1, aos:'7Rg.02' },
-  { id:'q4',  label:'Q4 — What Odysseus\' instructions reveal about him as a leader',    max:1, aos:'7Ri.04 / 7Ri.12' },
-  { id:'q5',  label:'Q5 — One word describing how the sound first reaches the sailors',  max:1, aos:'7Rv.02' },
-  { id:'q6a', label:'Q6a — Identify the literary technique used',                        max:1, aos:'7Rv.03' },
-  { id:'q6b', label:'Q6b — Explain the effect of that technique',                        max:1, aos:'7Rv.02 / 7Ri.10' },
-  { id:'q7',  label:'Q7 — Identify the purpose of commas in the sentence (tick-box)',    max:1, aos:'7Rg.01' },
-  { id:'q8',  label:'Q8 — Literary technique in "But the rest was lost…"',               max:1, aos:'7Rv.03' },
-  { id:'q9',  label:'Q9 — What "thinned, then dissolved" suggests about the song',       max:1, aos:'7Rv.02 / 7Ri.04' },
-  { id:'q10', label:'Q10 — Why the writer chose a short, ambiguous final answer',        max:1, aos:'7Ri.10 / 7Ri.12' },
-  { id:'q11', label:'Q11 — Personal response: two reasons with supporting quotations',   max:4, aos:'7Ri.08 / 7Ra.02' },
-  { id:'q12a',label:'Q12a — Complete the table about the Sirens',                        max:3, aos:'7Ri.06 / 7Ri.03' },
-  { id:'q12b',label:'Q12b — Write a summary in your own words (up to 50 words)',         max:2, aos:'7Ri.06' },
-];
-const CRIT = [
-  { id:'wc', label:'Wc — Creation of text',       max:3, desc:'Relevance, genre features, audience awareness (7Wc.01/03/04)' },
-  { id:'wv', label:'Wv — Vocabulary & language',  max:2, desc:'Ambitious vocabulary, literary technique (7Wv.01/02)' },
-  { id:'wg', label:'Wg — Grammar & punctuation',  max:4, desc:'Accuracy, sentence variety, punctuation range (7Wg.01–04)' },
-  { id:'ws', label:'Ws — Structure of text',       max:4, desc:'Paragraphing, progression, effective opening & ending (7Ws.01–03)' },
-  { id:'ww', label:'Ww — Spelling',               max:2, desc:'Accuracy including ambitious words (7Ww.01/03)' },
-];
-
-// Totals — Section A is 21 marks (not 25; the mark scheme confirms this)
-const TOTALS = { a: 21, b: 15, c: 15, all: 51 };
-
-// Grade bands
+/* ── Grade bands (shared across all year groups) ─────────────── */
 const GRADE_BANDS = [
   { label: 'Basic',       lower: 0,  upper: 40,  bg: '#fee2e2', color: '#991b1b', border: '#fca5a5' },
   { label: 'Aspiring',    lower: 40, upper: 50,  bg: '#ffedd5', color: '#9a3412', border: '#fdba74' },
@@ -453,24 +404,109 @@ const GRADE_BANDS = [
   { label: 'Outstanding', lower: 75, upper: 100, bg: '#d1fae5', color: '#065f46', border: '#6ee7b7' },
 ];
 
-// Radar axes — 6 Cambridge sub-strand clusters
-const AXES = [
-  { label:['Retrieval &','Summarising'],    key:'ret',   qs:['q1','q12a','q12b'],          max:7  },
-  { label:['Inference &','Interpretation'], key:'inf',   qs:['q2','q4','q9','q10'],         max:4  },
-  { label:['Language &','Grammar'],         key:'lang',  qs:['q3','q5','q6a','q6b','q7','q8'], max:6 },
-  { label:['Personal','Response'],          key:'pers',  qs:['q11'],                        max:4  },
-  { label:['Comparative','Writing'],        key:'comp',  secB:true,                         max:15 },
-  { label:['Creative','Writing'],           key:'creat', crit:['wc','wv','wg','ws','ww'],   max:15 },
-];
+/* ══════════════════════════════════════════════════════════════
+   EXAM DATA — one block per year group
+   Add Y8/Y9/Y10 blocks here when those exams are ready.
+   ══════════════════════════════════════════════════════════════ */
+const EXAMS = {
+
+  Y7: {
+    label: 'Year 7',
+    comingSoon: false,
+    examContext: 'The exam was based on two texts about mythological sea creatures: Text A (Odysseus and the Sirens — a retelling of a Greek myth) and Text B (The Mermaids of the Blue Holes — an original story set in the Bahamas drawing on local legend).',
+    framework: 'Cambridge Lower Secondary English 0861, Stage 7',
+    totals: { a: 21, b: 15, c: 15, all: 51 },
+    sections: {
+      a: {
+        name: 'Reading Comprehension',
+        questions: [
+          { id:'q1',  label:'Q1 — Two words showing the Sirens\' intensity of danger',         max:2, aos:'7Ri.03' },
+          { id:'q2',  label:'Q2 — Word/phrase suggesting false pleasantness (lines 13–14)',     max:1, aos:'7Ri.04' },
+          { id:'q3',  label:'Q3 — Identify the sentence type (tick-box)',                       max:1, aos:'7Rg.02' },
+          { id:'q4',  label:'Q4 — What Odysseus\' instructions reveal about him as a leader',   max:1, aos:'7Ri.04 / 7Ri.12' },
+          { id:'q5',  label:'Q5 — One word describing how the sound first reaches the sailors', max:1, aos:'7Rv.02' },
+          { id:'q6a', label:'Q6a — Identify the literary technique used',                       max:1, aos:'7Rv.03' },
+          { id:'q6b', label:'Q6b — Explain the effect of that technique',                       max:1, aos:'7Rv.02 / 7Ri.10' },
+          { id:'q7',  label:'Q7 — Identify the purpose of commas in the sentence (tick-box)',   max:1, aos:'7Rg.01' },
+          { id:'q8',  label:'Q8 — Literary technique in "But the rest was lost…"',              max:1, aos:'7Rv.03' },
+          { id:'q9',  label:'Q9 — What "thinned, then dissolved" suggests about the song',      max:1, aos:'7Rv.02 / 7Ri.04' },
+          { id:'q10', label:'Q10 — Why the writer chose a short, ambiguous final answer',       max:1, aos:'7Ri.10 / 7Ri.12' },
+          { id:'q11', label:'Q11 — Personal response: two reasons with supporting quotations',  max:4, aos:'7Ri.08 / 7Ra.02' },
+          { id:'q12a',label:'Q12a — Complete the table about the Sirens',                       max:3, aos:'7Ri.06 / 7Ri.03' },
+          { id:'q12b',label:'Q12b — Write a summary in your own words (up to 50 words)',        max:2, aos:'7Ri.06' },
+        ],
+      },
+      b: { name: 'Comparative Writing' },
+      c: {
+        name: 'Creative Writing',
+        criteria: [
+          { id:'wc', label:'Wc — Creation of text',      max:3, desc:'Relevance, genre features, audience awareness (7Wc.01/03/04)' },
+          { id:'wv', label:'Wv — Vocabulary & language', max:2, desc:'Ambitious vocabulary, literary technique (7Wv.01/02)' },
+          { id:'wg', label:'Wg — Grammar & punctuation', max:4, desc:'Accuracy, sentence variety, punctuation range (7Wg.01–04)' },
+          { id:'ws', label:'Ws — Structure of text',     max:4, desc:'Paragraphing, progression, effective opening & ending (7Ws.01–03)' },
+          { id:'ww', label:'Ww — Spelling',              max:2, desc:'Accuracy including ambitious words (7Ww.01/03)' },
+        ],
+      },
+    },
+    radarAxes: [
+      { label:['Retrieval &','Summarising'],    key:'ret',   qs:['q1','q12a','q12b'],              max:7  },
+      { label:['Inference &','Interpretation'], key:'inf',   qs:['q2','q4','q9','q10'],             max:4  },
+      { label:['Language &','Grammar'],         key:'lang',  qs:['q3','q5','q6a','q6b','q7','q8'], max:6  },
+      { label:['Personal','Response'],          key:'pers',  qs:['q11'],                            max:4  },
+      { label:['Comparative','Writing'],        key:'comp',  secB:true,                             max:15 },
+      { label:['Creative','Writing'],           key:'creat', crit:['wc','wv','wg','ws','ww'],       max:15 },
+    ],
+  },
+
+  // ── Y8 — add exam data here when ready ──────────────────────
+  Y8: {
+    label: 'Year 8',
+    comingSoon: true,
+  },
+
+  // ── Y9 — add exam data here when ready ──────────────────────
+  Y9: {
+    label: 'Year 9',
+    comingSoon: true,
+  },
+
+  // ── Y10 — add exam data here when ready ─────────────────────
+  Y10: {
+    label: 'Year 10',
+    comingSoon: true,
+  },
+};
+/* ══════════════════════════════════════════════════════════════ */
+
+/* ── Active exam (set on year selection) ─────────────────────── */
+let EXAM = null;
 
 /* ── App state ───────────────────────────────────────────────── */
-let S = { step:1, marks:{}, bMark:0, bWWW:'', bEBI:'', cMarks:{}, cWWW:'', cEBI:'', books:[], name:'', teacher:'', cls:'' };
+let S = { yearGroup:null, step:1, marks:{}, bMark:0, bWWW:'', bEBI:'', cMarks:{}, cWWW:'', cEBI:'', books:[], name:'', teacher:'', cls:'' };
 let chart = null;
 
-/* ── Build form elements on load ─────────────────────────────── */
+/* ── Year selection ──────────────────────────────────────────── */
+function selectYear(y) {
+  S.yearGroup = y;
+  EXAM = EXAMS[y];
+  // Update button states
+  Object.keys(EXAMS).forEach(k => {
+    const btn = document.getElementById('yr-' + k);
+    btn.classList.toggle('selected', k === y);
+  });
+  const banner = document.getElementById('comingBanner');
+  banner.style.display = EXAM.comingSoon ? 'block' : 'none';
+  document.getElementById('headerTitle').textContent =
+    `${EXAM.label} English — End of Year Exam Summary`;
+}
+
+/* ── Build form questions dynamically ───────────────────────── */
 function buildForms() {
+  // Forms are rebuilt each time the user selects a year and progresses
+  // Called from go(2) after year is confirmed
   const aqc = document.getElementById('secAQuestions');
-  QS.forEach(q => {
+  aqc.innerHTML = '';
+  EXAM.sections.a.questions.forEach(q => {
     const d = document.createElement('div'); d.className = 'q-row';
     d.innerHTML = `
       <div class="q-label">${q.label}<span class="ao-tag">${q.aos} &nbsp;[${q.max} mark${q.max>1?'s':''}]</span></div>
@@ -481,9 +517,11 @@ function buildForms() {
       </div>`;
     aqc.appendChild(d);
   });
+  document.getElementById('totA').textContent = `0 / ${EXAM.totals.a}`;
 
   const cqc = document.getElementById('secCCriteria');
-  CRIT.forEach(c => {
+  cqc.innerHTML = '';
+  EXAM.sections.c.criteria.forEach(c => {
     const d = document.createElement('div'); d.className = 'q-row';
     d.innerHTML = `
       <div class="q-label"><strong>${c.label}</strong><span class="ao-tag">${c.desc}</span></div>
@@ -494,6 +532,13 @@ function buildForms() {
       </div>`;
     cqc.appendChild(d);
   });
+  document.getElementById('totC').textContent = `0 / ${EXAM.totals.c}`;
+  document.getElementById('bMarkOf').textContent = `/ ${EXAM.totals.b}`;
+
+  // Update section titles
+  document.getElementById('secATitle').textContent = `📖 Section A — ${EXAM.sections.a.name}`;
+  document.getElementById('secBTitle').textContent = `✍️ Section B — ${EXAM.sections.b.name}`;
+  document.getElementById('secCTitle').textContent = `🖊️ Section C — ${EXAM.sections.c.name}`;
 }
 
 /* ── Helpers ─────────────────────────────────────────────────── */
@@ -502,12 +547,12 @@ function clamp(el, max) {
   el.value = Math.max(0, Math.min(max, v));
 }
 function totA() {
-  const t = QS.reduce((s,q)=>s+(parseInt(document.getElementById(q.id).value)||0),0);
-  document.getElementById('totA').textContent = `${t} / ${TOTALS.a}`;
+  const t = EXAM.sections.a.questions.reduce((s,q)=>s+(parseInt(document.getElementById(q.id).value)||0),0);
+  document.getElementById('totA').textContent = `${t} / ${EXAM.totals.a}`;
 }
 function totC() {
-  const t = CRIT.reduce((s,c)=>s+(parseInt(document.getElementById(c.id).value)||0),0);
-  document.getElementById('totC').textContent = `${t} / 15`;
+  const t = EXAM.sections.c.criteria.reduce((s,c)=>s+(parseInt(document.getElementById(c.id).value)||0),0);
+  document.getElementById('totC').textContent = `${t} / ${EXAM.totals.c}`;
 }
 function bandB() {
   const m = parseInt(document.getElementById('bMark').value)||0;
@@ -519,10 +564,19 @@ function bandB() {
   else el.innerHTML='';
 }
 function scores() {
-  const a = QS.reduce((s,q)=>s+(S.marks[q.id]||0),0);
+  const a = EXAM.sections.a.questions.reduce((s,q)=>s+(S.marks[q.id]||0),0);
   const b = S.bMark;
-  const c = CRIT.reduce((s,cr)=>s+(S.cMarks[cr.id]||0),0);
+  const c = EXAM.sections.c.criteria.reduce((s,cr)=>s+(S.cMarks[cr.id]||0),0);
   return { a, b, c, tot:a+b+c };
+}
+function radarPcts() {
+  return EXAM.radarAxes.map(ax => {
+    let got = 0;
+    if (ax.qs)   ax.qs.forEach(id => got += S.marks[id]||0);
+    if (ax.secB) got = S.bMark;
+    if (ax.crit) ax.crit.forEach(id => got += S.cMarks[id]||0);
+    return Math.round((got/ax.max)*100);
+  });
 }
 function getGrade(pct) {
   for (let i = GRADE_BANDS.length - 1; i >= 0; i--) {
@@ -533,74 +587,53 @@ function getGrade(pct) {
   }
   return { ...GRADE_BANDS[0], range: '0–39%' };
 }
-
 function buildGradeBar(pct, tot) {
-  const grade  = getGrade(pct);
-  const idx    = GRADE_BANDS.findIndex(b => b.label === grade.label);
-  const next   = GRADE_BANDS[idx + 1] || null;
-
-  // Marks at each boundary
-  const lowerMark = Math.ceil((grade.lower / 100) * TOTALS.all);
+  const grade = getGrade(pct);
+  const idx   = GRADE_BANDS.findIndex(b => b.label === grade.label);
+  const next  = GRADE_BANDS[idx + 1] || null;
+  const lowerMark  = Math.ceil((grade.lower / 100) * EXAM.totals.all);
   const aboveMarks = Math.max(0, tot - lowerMark);
-  const fromLowerTxt = `${aboveMarks} mark${aboveMarks !== 1 ? 's' : ''} above the ${grade.label} lower boundary (${grade.lower}%)`;
-
-  let toNextTxt = 'Top grade achieved!';
+  const fromTxt = `${aboveMarks} mark${aboveMarks!==1?'s':''} above the ${grade.label} lower boundary (${grade.lower}%)`;
+  let nextTxt = 'Top grade achieved!';
   if (next) {
-    const nextMark   = Math.ceil((next.lower / 100) * TOTALS.all);
-    const toNext     = Math.max(0, nextMark - tot);
-    toNextTxt = `${toNext} mark${toNext !== 1 ? 's' : ''} from ${next.label} (${next.lower}%)`;
+    const nextMark = Math.ceil((next.lower / 100) * EXAM.totals.all);
+    const toNext   = Math.max(0, nextMark - tot);
+    nextTxt = `${toNext} mark${toNext!==1?'s':''} from ${next.label} (${next.lower}%)`;
   }
-
-  // Bar: each band's width = its percentage-point span
   const segments = GRADE_BANDS.map(b => {
     const w = b.upper - b.lower;
-    const active = b.label === grade.label;
-    return `<div style="width:${w}%;background:${b.bg};height:100%;opacity:${active ? 1 : 0.55}"></div>`;
+    return `<div style="width:${w}%;background:${b.bg};height:100%;opacity:${b.label===grade.label?1:0.55}"></div>`;
   }).join('');
-
-  const markerLeft = Math.min(Math.max(pct, 1), 99);
-
-  const boundaryTicks = [40, 50, 65, 75].map(p =>
+  const ml = Math.min(Math.max(pct, 1), 99);
+  const ticks = [40,50,65,75].map(p =>
     `<div style="position:absolute;left:${p}%;transform:translateX(-50%);font-size:0.65rem;opacity:0.8;white-space:nowrap">${p}%</div>`
   ).join('');
-
-  return `
-    <div style="margin:10px 0 4px">
-      <div style="position:relative">
-        <div style="display:flex;height:16px;border-radius:8px;overflow:hidden;box-shadow:0 1px 5px rgba(0,0,0,0.2)">
-          ${segments}
-        </div>
-        <div style="position:absolute;left:${markerLeft}%;top:-2px;transform:translateX(-50%);pointer-events:none">
-          <div style="width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:7px solid rgba(255,255,255,0.95);margin:0 auto"></div>
-          <div style="width:2px;height:16px;background:rgba(255,255,255,0.9);margin:0 auto"></div>
-        </div>
+  return `<div style="margin:10px 0 4px">
+    <div style="position:relative">
+      <div style="display:flex;height:16px;border-radius:8px;overflow:hidden;box-shadow:0 1px 5px rgba(0,0,0,0.2)">${segments}</div>
+      <div style="position:absolute;left:${ml}%;top:-2px;transform:translateX(-50%);pointer-events:none">
+        <div style="width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:7px solid rgba(255,255,255,0.95);margin:0 auto"></div>
+        <div style="width:2px;height:16px;background:rgba(255,255,255,0.9);margin:0 auto"></div>
       </div>
-      <div style="position:relative;height:18px;margin-top:1px">${boundaryTicks}</div>
-      <div style="text-align:center;font-size:0.78rem;opacity:0.88;margin-top:2px;line-height:1.6">
-        ${fromLowerTxt}&nbsp;&nbsp;·&nbsp;&nbsp;${toNextTxt}
-      </div>
-    </div>`;
-}
-function radarPcts() {
-  return AXES.map(ax => {
-    let got = 0;
-    if (ax.qs)   ax.qs.forEach(id => got += S.marks[id]||0);
-    if (ax.secB) got = S.bMark;
-    if (ax.crit) ax.crit.forEach(id => got += S.cMarks[id]||0);
-    return Math.round((got/ax.max)*100);
-  });
+    </div>
+    <div style="position:relative;height:18px;margin-top:1px">${ticks}</div>
+    <div style="text-align:center;font-size:0.78rem;opacity:0.88;margin-top:2px;line-height:1.6">${fromTxt}&nbsp;&nbsp;·&nbsp;&nbsp;${nextTxt}</div>
+  </div>`;
 }
 
 /* ── Navigation ──────────────────────────────────────────────── */
 function go(n) {
-  if (n>1 && !document.getElementById('sName').value.trim()) {
-    alert('Please enter your name before continuing.'); return;
+  if (n > 1) {
+    if (!S.yearGroup) { alert('Please select your year group first.'); return; }
+    if (EXAM.comingSoon) { return; }
+    if (!document.getElementById('sName').value.trim()) { alert('Please enter your name before continuing.'); return; }
   }
-  document.getElementById(`pg${S.step}`).style.display='none';
-  document.getElementById(`sd${S.step}`).className='step-dot done';
+  if (n === 2 && S.step === 1) buildForms(); // rebuild whenever entering step 2
+  document.getElementById(`pg${S.step}`).style.display = 'none';
+  document.getElementById(`sd${S.step}`).className = 'step-dot done';
   S.step = n;
-  document.getElementById(`pg${n}`).style.display='block';
-  document.getElementById(`sd${n}`).className='step-dot active';
+  document.getElementById(`pg${n}`).style.display = 'block';
+  document.getElementById(`sd${n}`).className = 'step-dot active';
   window.scrollTo({top:0, behavior:'smooth'});
 }
 
@@ -609,11 +642,11 @@ function collect() {
   S.name    = document.getElementById('sName').value.trim();
   S.teacher = document.getElementById('sTeacher').value.trim();
   S.cls     = document.getElementById('sClass').value.trim();
-  QS.forEach(q  => S.marks[q.id]   = parseInt(document.getElementById(q.id).value)||0);
+  EXAM.sections.a.questions.forEach(q => S.marks[q.id] = parseInt(document.getElementById(q.id).value)||0);
   S.bMark = parseInt(document.getElementById('bMark').value)||0;
   S.bWWW  = document.getElementById('bWWW').value.trim();
   S.bEBI  = document.getElementById('bEBI').value.trim();
-  CRIT.forEach(c => S.cMarks[c.id] = parseInt(document.getElementById(c.id).value)||0);
+  EXAM.sections.c.criteria.forEach(c => S.cMarks[c.id] = parseInt(document.getElementById(c.id).value)||0);
   S.cWWW  = document.getElementById('cWWW').value.trim();
   S.cEBI  = document.getElementById('cEBI').value.trim();
   S.books = [document.getElementById('bk1').value.trim(),
@@ -623,76 +656,71 @@ function collect() {
 
 /* ── Build AI prompt ─────────────────────────────────────────── */
 function buildPrompt() {
-  const sc = scores();
-  const qLines = QS.map(q=>`  ${q.label}: ${S.marks[q.id]}/${q.max} (AOs: ${q.aos})`).join('\n');
-  const cLines = CRIT.map(c=>`  ${c.label}: ${S.cMarks[c.id]}/${c.max}`).join('\n');
-  const pct = Math.round(sc.tot/55*100);
+  const sc  = scores();
+  const pct = Math.round(sc.tot / EXAM.totals.all * 100);
   const grade = getGrade(pct);
-  const favs = S.books.filter(Boolean).join(', ') || 'not provided';
   const bandLabel = sc.b>=12?'Band 4 – High (12–15)':sc.b>=8?'Band 3 – Mid (8–11)':sc.b>=4?'Band 2 – Low (4–7)':'Band 1 – Minimal (1–3)';
+  const qLines = EXAM.sections.a.questions.map(q=>`  ${q.label}: ${S.marks[q.id]}/${q.max} (AOs: ${q.aos})`).join('\n');
+  const cLines = EXAM.sections.c.criteria.map(c=>`  ${c.label}: ${S.cMarks[c.id]}/${c.max}`).join('\n');
+  const radarSummary = EXAM.radarAxes.map((ax,i)=>`  ${ax.label.join(' ')}: ${radarPcts()[i]}%`).join('\n');
+  const favs = S.books.filter(Boolean).join(', ') || 'not provided';
 
-  const radarSummary = AXES.map((ax,i)=>{
-    const pct = radarPcts()[i];
-    return `  ${ax.label.join(' ')}: ${pct}%`;
-  }).join('\n');
-
-  return `You are a supportive English teacher writing a personalised end-of-year exam summary for a Year 7 student (age 11–12). Your tone should be warm, encouraging, specific, and age-appropriate.
+  return `You are a supportive English teacher writing a personalised end-of-year exam report for a ${EXAM.label} student (age ${EXAM.label === 'Year 7' ? '11–12' : EXAM.label === 'Year 8' ? '12–13' : EXAM.label === 'Year 9' ? '13–14' : '14–15'}). Your tone should be warm, encouraging, specific, and age-appropriate.
 
 STUDENT: ${S.name}${S.teacher?` | Teacher: ${S.teacher}`:''}${S.cls?` | Class: ${S.cls}`:''}
+YEAR GROUP: ${EXAM.label}
+FRAMEWORK: ${EXAM.framework}
 
-EXAM: Y7 English End-of-Year Exam (${TOTALS.all} marks total)
-Framework: Cambridge Lower Secondary English 0861, Stage 7
+EXAM CONTEXT: ${EXAM.examContext}
 
-RESULTS SUMMARY:
-Section A (Reading Comprehension): ${sc.a}/${TOTALS.a} (${Math.round(sc.a/TOTALS.a*100)}%)
-Section B (Comparative Writing):   ${sc.b}/${TOTALS.b} (${Math.round(sc.b/TOTALS.b*100)}%) — ${bandLabel}
-Section C (Creative Writing):      ${sc.c}/${TOTALS.c} (${Math.round(sc.c/TOTALS.c*100)}%)
-Overall: ${sc.tot}/${TOTALS.all} (${pct}%) — Grade: ${grade.label} (${grade.range})
+RESULTS:
+Section A (${EXAM.sections.a.name}): ${sc.a}/${EXAM.totals.a} (${Math.round(sc.a/EXAM.totals.a*100)}%)
+Section B (${EXAM.sections.b.name}): ${sc.b}/${EXAM.totals.b} (${Math.round(sc.b/EXAM.totals.b*100)}%) — ${bandLabel}
+Section C (${EXAM.sections.c.name}): ${sc.c}/${EXAM.totals.c} (${Math.round(sc.c/EXAM.totals.c*100)}%)
+Overall: ${sc.tot}/${EXAM.totals.all} (${pct}%) — Grade: ${grade.label} (${grade.range})
 
-SECTION A QUESTION BREAKDOWN:
+SECTION A BREAKDOWN:
 ${qLines}
 
-SECTION B FEEDBACK FROM TEACHER:
+SECTION B TEACHER FEEDBACK:
 What Went Well: "${S.bWWW||'Not provided'}"
 Even Better If: "${S.bEBI||'Not provided'}"
 
-SECTION C CRITERIA BREAKDOWN:
+SECTION C BREAKDOWN:
 ${cLines}
-Section C Feedback from Teacher:
 What Went Well: "${S.cWWW||'Not provided'}"
 Even Better If: "${S.cEBI||'Not provided'}"
 
-CAMBRIDGE STAGE 7 SKILL AREAS (normalised to %):
+CAMBRIDGE SKILL AREAS (% of available marks):
 ${radarSummary}
 
 STUDENT'S FAVOURITE BOOKS: ${favs}
 
-SCHOOL READING LIST (all titles are Y7-appropriate; do not recommend anything not on this list):
+SCHOOL READING LIST (Y7-appropriate; only recommend from this list):
 ${CFG.readingList.map((b,i)=>`${i+1}. ${b}`).join('\n')}
 
-Write the report using EXACTLY these four headings (include the ## symbols):
+Write the report with EXACTLY these four headings (include the ## symbols):
 
 ## STRENGTHS
-2–3 paragraphs. Identify genuine strengths. Be specific — reference particular questions, Cambridge LO codes (e.g. 7Ri.03, 7Wg), and marks where helpful. Explain what the strength demonstrates as a skill. Keep it warm and affirming. Acknowledge the overall grade (${grade.label}) positively.
+2–3 paragraphs. Identify genuine strengths. Reference specific questions, Cambridge LO codes, and marks. Acknowledge the overall grade (${grade.label}) positively. Be warm and affirming.
 
 ## AREAS FOR DEVELOPMENT
-2–3 paragraphs. Identify 2–3 areas to improve. Be constructive, not discouraging. Reference specific Cambridge LO codes and teacher EBI comments where relevant. Explain clearly what the student should aim to do differently.
+2–3 paragraphs. Identify 2–3 areas to improve. Be constructive. Reference Cambridge LO codes and teacher EBI comments where relevant.
 
 ## HOLIDAY IMPROVEMENT ACTIONS
-3 specific, practical, age-appropriate actions — completely optional, framed as choices. Use this exact format for each:
-ACTION 1: [short title] | [1–2 sentence explanation of what to do and why it helps]
-ACTION 2: [short title] | [1–2 sentence explanation]
-ACTION 3: [short title] | [1–2 sentence explanation]
-Actions should address this student's specific weaknesses, not be generic advice.
+Exactly 3 specific, practical, age-appropriate actions — completely optional. Format:
+ACTION 1: [short title] | [1–2 sentences]
+ACTION 2: [short title] | [1–2 sentences]
+ACTION 3: [short title] | [1–2 sentences]
 
 ## BOOK RECOMMENDATIONS
-Choose exactly 3 books from the reading list above. Only use titles that appear on the list — do not invent or add others. Prioritise books from the lighter-coloured (more accessible) sections of the list unless the student's stated favourites suggest they are ready for more challenging texts. Use this exact format:
-BOOK 1: [Title — Author] | [1–2 sentences explaining why this student in particular would enjoy it, connecting to their stated favourites]
+Exactly 3 books from the list above only. Prioritise lighter-band titles unless favourites suggest readiness for more challenge. Format:
+BOOK 1: [Title — Author] | [1–2 sentences connecting to stated favourites]
 BOOK 2: [Title — Author] | [1–2 sentences]
 BOOK 3: [Title — Author] | [1–2 sentences]`;
 }
 
-/* ── Call Anthropic via Netlify proxy ────────────────────────── */
+/* ── Call Netlify proxy ──────────────────────────────────────── */
 async function callAPI(prompt) {
   const r = await fetch('/.netlify/functions/generate', {
     method: 'POST',
@@ -723,30 +751,22 @@ function parseAI(txt) {
 
 /* ── Render results ──────────────────────────────────────────── */
 function render(parsed) {
-  const sc = scores();
-  const pct = Math.round(sc.tot / TOTALS.all * 100);
+  const sc  = scores();
+  const pct = Math.round(sc.tot / EXAM.totals.all * 100);
   const grade = getGrade(pct);
-  // Hero
   document.getElementById('rName').textContent  = `${S.name} — Exam Summary`;
-  document.getElementById('rSub').textContent   = `Year 7 English${S.teacher?` · ${S.teacher}`:''}${S.cls?` · ${S.cls}`:''}`;
+  document.getElementById('rSub').textContent   = `${EXAM.label} English${S.teacher?` · ${S.teacher}`:''}${S.cls?` · ${S.cls}`:''}`;
   document.getElementById('rTotal').textContent = sc.tot;
+  document.getElementById('rTotalLbl').textContent = `Total / ${EXAM.totals.all}`;
   document.getElementById('rPct').textContent   = `${pct}%`;
   document.getElementById('rABC').textContent   = `${sc.a} / ${sc.b} / ${sc.c}`;
   document.getElementById('rGrade').innerHTML   =
     `<div style="margin-bottom:6px">
-      <span style="display:inline-flex;align-items:center;gap:8px;background:${grade.bg};color:${grade.color};border:2px solid ${grade.border};border-radius:28px;padding:8px 22px;font-weight:800;font-size:1.15rem;">
-        ${grade.label}
-      </span>
-    </div>
-    ${buildGradeBar(pct, sc.tot)}`;
+      <span style="display:inline-flex;align-items:center;gap:8px;background:${grade.bg};color:${grade.color};border:2px solid ${grade.border};border-radius:28px;padding:8px 22px;font-weight:800;font-size:1.15rem;">${grade.label}</span>
+    </div>${buildGradeBar(pct, sc.tot)}`;
 
-  // Radar
   drawRadar();
-
-  // Table
   drawTable(sc);
-
-  // Text sections
   drawParas('rStrengths', parsed.strengths);
   drawParas('rDev',       parsed.dev);
   drawActions('rActions', parsed.actions);
@@ -761,8 +781,7 @@ function render(parsed) {
 function drawParas(id, txt) {
   const el = document.getElementById(id);
   if (!txt) { el.innerHTML='<p>Content not available.</p>'; return; }
-  el.innerHTML = txt.split(/\n\n+/).filter(p=>p.trim())
-    .map(p=>`<p>${p.trim().replace(/\n/g,' ')}</p>`).join('');
+  el.innerHTML = txt.split(/\n\n+/).filter(p=>p.trim()).map(p=>`<p>${p.trim().replace(/\n/g,' ')}</p>`).join('');
 }
 function drawActions(id, txt) {
   const el = document.getElementById(id);
@@ -771,9 +790,7 @@ function drawActions(id, txt) {
   let m, html='', n=0;
   while ((m=re.exec(txt))!==null) {
     n++;
-    const title = m[1].trim().replace(/\*+/g,'');
-    const body  = m[2].trim().replace(/\n/g,' ');
-    html += `<div class="action-item"><strong>${n}. ${title}</strong>${body}</div>`;
+    html += `<div class="action-item"><strong>${n}. ${m[1].trim().replace(/\*+/g,'')}</strong>${m[2].trim().replace(/\n/g,' ')}</div>`;
   }
   el.innerHTML = html || `<div class="action-item">${txt}</div>`;
 }
@@ -784,66 +801,102 @@ function drawBooks(id, txt) {
   let m, html='', n=0;
   while ((m=re.exec(txt))!==null) {
     n++;
-    const titleAuth = m[1].trim().replace(/\*+/g,'');
-    const desc = m[2].trim().replace(/\n/g,' ');
-    html += `<div class="book-item"><div class="book-num">${n}</div><div class="book-info"><strong>${titleAuth}</strong><p>${desc}</p></div></div>`;
+    html += `<div class="book-item"><div class="book-num">${n}</div><div class="book-info"><strong>${m[1].trim().replace(/\*+/g,'')}</strong><p>${m[2].trim().replace(/\n/g,' ')}</p></div></div>`;
   }
   el.innerHTML = html || `<div class="book-item"><div class="book-info"><p>${txt}</p></div></div>`;
 }
-
 function drawRadar() {
   const ctx = document.getElementById('radar').getContext('2d');
   if (chart) chart.destroy();
   chart = new Chart(ctx, {
     type: 'radar',
     data: {
-      labels: AXES.map(a=>a.label),
-      datasets: [{
-        label: S.name,
-        data: radarPcts(),
-        backgroundColor: 'rgba(26,58,92,0.15)',
-        borderColor: '#1a3a5c',
-        borderWidth: 2.5,
-        pointBackgroundColor: '#c9a227',
-        pointBorderColor: '#fff',
-        pointBorderWidth: 2,
-        pointRadius: 5,
-        pointHoverRadius: 7,
-      }]
+      labels: EXAM.radarAxes.map(a=>a.label),
+      datasets: [{ label: S.name, data: radarPcts(),
+        backgroundColor:'rgba(26,58,92,0.15)', borderColor:'#1a3a5c', borderWidth:2.5,
+        pointBackgroundColor:'#c9a227', pointBorderColor:'#fff', pointBorderWidth:2,
+        pointRadius:5, pointHoverRadius:7 }]
     },
-    options: {
-      responsive: true,
-      scales: {
-        r: {
-          min: 0, max: 100,
-          ticks: { stepSize: 25, callback: v=>v+'%', font:{size:10}, backdropColor:'transparent' },
-          pointLabels: { font:{size:11.5}, color:'#1e2d3d' },
-          grid: { color:'#d8e0eb' },
-          angleLines: { color:'#d8e0eb' },
-        }
-      },
-      plugins: { legend:{ display:false }, tooltip:{ callbacks:{ label:ctx=>`${ctx.raw}%` } } }
+    options: { responsive:true,
+      scales:{ r:{ min:0, max:100,
+        ticks:{ stepSize:25, callback:v=>v+'%', font:{size:10}, backdropColor:'transparent' },
+        pointLabels:{ font:{size:11.5}, color:'#1e2d3d' },
+        grid:{ color:'#d8e0eb' }, angleLines:{ color:'#d8e0eb' } } },
+      plugins:{ legend:{ display:false }, tooltip:{ callbacks:{ label:ctx=>`${ctx.raw}%` } } }
     }
   });
 }
-
 function pctBar(n) {
   return `<span class="pct-bar"><span class="pct-fill" style="width:${n}%"></span></span>`;
 }
-
 function drawTable(sc) {
   const el = document.getElementById('marksTable');
   let h = `<thead><tr><th>Question / Criterion</th><th>Mark</th><th>Max</th><th>%</th></tr></thead><tbody>`;
-
-  h += `<tr class="sec-hdr"><td colspan="4">Section A — Reading Comprehension</td></tr>`;
-  QS.forEach(q => {
-    const got=S.marks[q.id], pct=Math.round(got/q.max*100);
-    h += `<tr><td>${q.label}</td><td>${got}</td><td>${q.max}</td><td>${pct}%${pctBar(pct)}</td></tr>`;
+  h += `<tr class="sec-hdr"><td colspan="4">Section A — ${EXAM.sections.a.name}</td></tr>`;
+  EXAM.sections.a.questions.forEach(q => {
+    const got=S.marks[q.id], p=Math.round(got/q.max*100);
+    h += `<tr><td>${q.label}</td><td>${got}</td><td>${q.max}</td><td>${p}%${pctBar(p)}</td></tr>`;
   });
-  h += `<tr class="sub-total"><td>Section A Total</td><td>${sc.a}</td><td>${TOTALS.a}</td><td>${Math.round(sc.a/TOTALS.a*100)}%</td></tr>`;
+  h += `<tr class="sub-total"><td>Section A Total</td><td>${sc.a}</td><td>${EXAM.totals.a}</td><td>${Math.round(sc.a/EXAM.totals.a*100)}%</td></tr>`;
+  h += `<tr class="sec-hdr"><td colspan="4">Section B — ${EXAM.sections.b.name}</td></tr>
+    <tr><td>Q13 — ${EXAM.sections.b.name} Essay</td><td>${sc.b}</td><td>${EXAM.totals.b}</td><td>${Math.round(sc.b/EXAM.totals.b*100)}%${pctBar(Math.round(sc.b/EXAM.totals.b*100))}</td></tr>
+    <tr class="sub-total"><td>Section B Total</td><td>${sc.b}</td><td>${EXAM.totals.b}</td><td>${Math.round(sc.b/EXAM.totals.b*100)}%</td></tr>`;
+  h += `<tr class="sec-hdr"><td colspan="4">Section C — ${EXAM.sections.c.name}</td></tr>`;
+  EXAM.sections.c.criteria.forEach(c => {
+    const got=S.cMarks[c.id], p=Math.round(got/c.max*100);
+    h += `<tr><td>${c.label}</td><td>${got}</td><td>${c.max}</td><td>${p}%${pctBar(p)}</td></tr>`;
+  });
+  h += `<tr class="sub-total"><td>Section C Total</td><td>${sc.c}</td><td>${EXAM.totals.c}</td><td>${Math.round(sc.c/EXAM.totals.c*100)}%</td></tr>`;
+  h += `<tr class="total-row"><td>Overall Total</td><td>${sc.tot}</td><td>${EXAM.totals.all}</td><td>${Math.round(sc.tot/EXAM.totals.all*100)}%</td></tr>`;
+  h += `</tbody>`;
+  el.innerHTML = h;
+}
 
-  h += `<tr class="sec-hdr"><td colspan="4">Section B — Comparative Writing</td></tr>
-    <tr><td>Q13 — Comparative Essay</td><td>${sc.b}</td><td>15</td><td>${Math.round(sc.b/15*100)}%${pctBar(Math.round(sc.b/15*100))}</td></tr>
-    <tr class="sub-total"><td>Section B Total</td><td>${sc.b}</td><td>15</td><td>${Math.round(sc.b/15*100)}%</td></tr>`;
+/* ── Generate ────────────────────────────────────────────────── */
+async function generate() {
+  collect();
+  if (!S.name) { document.getElementById('genErr').innerHTML='<div class="error-box">Please enter your name on step 1 before generating.</div>'; return; }
+  document.getElementById('genErr').innerHTML = '';
+  document.getElementById('overlay').classList.add('on');
+  try {
+    const txt = await callAPI(buildPrompt());
+    render(parseAI(txt));
+  } catch(e) {
+    console.error(e);
+    document.getElementById('genErr').innerHTML=`<div class="error-box">⚠️ Could not generate report: ${e.message}. Please try again or contact your teacher.</div>`;
+  } finally {
+    document.getElementById('overlay').classList.remove('on');
+  }
+}
 
-  h +
+/* ── PDF ─────────────────────────────────────────────────────── */
+async function dlPDF() {
+  const btn = document.getElementById('dlBtn');
+  btn.disabled = true; btn.textContent = 'Preparing PDF…';
+  try {
+    const canvas = document.getElementById('radar');
+    const imgData = canvas.toDataURL('image/png');
+    const tmp = document.createElement('img');
+    tmp.src = imgData; tmp.style.cssText = canvas.style.cssText;
+    tmp.width = canvas.offsetWidth; tmp.height = canvas.offsetHeight;
+    canvas.parentNode.replaceChild(tmp, canvas);
+    const fname = `${(S.name||'Student').replace(/\s+/g,'_')}_${S.yearGroup}_English_Summary.pdf`;
+    await html2pdf().set({
+      margin:[10,10,12,10], filename:fname,
+      image:{type:'jpeg',quality:0.96},
+      html2canvas:{scale:2, useCORS:true, backgroundColor:'#f4f6f9'},
+      jsPDF:{unit:'mm', format:'a4', orientation:'portrait'},
+      pagebreak:{mode:['avoid-all','css','legacy']},
+    }).from(document.getElementById('results')).save();
+    tmp.parentNode.replaceChild(canvas, tmp);
+  } finally {
+    btn.disabled = false; btn.textContent = '⬇ Download PDF';
+  }
+}
+
+function startOver() {
+  if (confirm('This will clear all your entries. Are you sure?')) location.reload();
+}
+</script>
+</body>
+</html>
