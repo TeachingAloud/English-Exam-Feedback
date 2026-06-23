@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>English Exam Summary Generator</title>
+  <title>Exam Feedback</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
     :root {
@@ -136,6 +136,17 @@
     .sec-heading { display: flex; align-items: center; gap: 10px; font-size: 1.05rem; font-weight: 700; color: var(--navy); margin-bottom: 4px; }
     .sec-heading::after { content: ''; flex: 1; height: 2px; background: linear-gradient(to right, var(--gold), transparent); }
 
+    /* Y10 dual-paper hero */
+    .dual-grades-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 16px; }
+    @media (max-width: 520px) { .dual-grades-grid { grid-template-columns: 1fr; } }
+    .dgp { background: rgba(255,255,255,.1); border-radius: 10px; padding: 14px 16px; }
+    .dgp-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: .07em; opacity: .7; margin-bottom: 8px; font-weight: 700; }
+    .dgp-score { font-size: 0.85rem; opacity: .8; margin-top: 10px; }
+    /* Y10 sub-section dividers in result cards */
+    .paper-section { margin-bottom: 20px; padding-bottom: 18px; border-bottom: 1px solid var(--border); }
+    .paper-section:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+    .paper-label { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--navy); opacity: .6; margin-bottom: 10px; }
+
     @media print {
       @page { margin: 14mm 12mm; }
       * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
@@ -155,7 +166,7 @@
 
 <header class="site-header">
   <div>
-    <h1 id="headerTitle">English — End of Year Exam Summary</h1>
+    <h1 id="headerTitle">Exam Feedback</h1>
     <p>Enter your marks and feedback to generate your personalised report</p>
   </div>
 </header>
@@ -187,7 +198,7 @@
         <button class="yr-btn" id="yr-Y7"  onclick="selectYear('Y7')">Year 7<span class="yr-tag">Available</span></button>
         <button class="yr-btn coming-soon" id="yr-Y8"  onclick="selectYear('Y8')">Year 8<span class="yr-tag">Coming soon</span></button>
         <button class="yr-btn" id="yr-Y9"  onclick="selectYear('Y9')">Year 9<span class="yr-tag">Available</span></button>
-        <button class="yr-btn coming-soon" id="yr-Y10" onclick="selectYear('Y10')">Year 10<span class="yr-tag">Coming soon</span></button>
+        <button class="yr-btn" id="yr-Y10" onclick="selectYear('Y10')">Year 10<span class="yr-tag">Available</span></button>
       </div>
       <div class="coming-banner" id="comingBanner">
         This year group's exam summary will be available soon — check back at the start of next term!
@@ -208,6 +219,7 @@
       <div id="secAChoiceArea"></div>
       <div id="secAQuestions"></div>
       <div class="sec-total">Section A total: <strong id="totA">0 / —</strong></div>
+      <div id="secAFeedbackArea"></div>
     </div>
     <div class="nav">
       <button class="btn btn-ghost" onclick="go(1)">&larr; Back</button>
@@ -278,7 +290,9 @@
 
   <!-- RESULTS -->
   <div id="results">
-    <div class="r-hero">
+
+    <!-- Standard hero (Y7 / Y9) -->
+    <div class="r-hero" id="rHeroStd">
       <h2 id="rName">Exam Summary</h2>
       <p id="rSub"></p>
       <div id="rGrade" style="margin:12px 0 4px"></div>
@@ -286,6 +300,26 @@
         <div class="score-cell"><div class="num" id="rTotal">—</div><div class="lbl" id="rTotalLbl">Total</div></div>
         <div class="score-cell"><div class="num" id="rPct">—</div><div class="lbl">Percentage</div></div>
         <div class="score-cell"><div class="num" id="rABC">—</div><div class="lbl">A / B / C</div></div>
+      </div>
+    </div>
+
+    <!-- Dual hero (Y10) -->
+    <div class="r-hero" id="rHeroDual" style="display:none">
+      <h2 id="rNameDual">Exam Summary</h2>
+      <p id="rSubDual"></p>
+      <div class="dual-grades-grid">
+        <div class="dgp">
+          <div class="dgp-label">English Language</div>
+          <div id="rLangGrade"></div>
+          <div id="rLangBar"></div>
+          <div class="dgp-score" id="rLangScore"></div>
+        </div>
+        <div class="dgp">
+          <div class="dgp-label">English Literature</div>
+          <div id="rLitGrade"></div>
+          <div id="rLitBar"></div>
+          <div class="dgp-score" id="rLitScore"></div>
+        </div>
       </div>
     </div>
 
@@ -300,17 +334,17 @@
       <table class="mt" id="marksTable"></table>
     </div>
 
-    <div class="card">
+    <div class="card" id="rStrengthsCard">
       <div class="sec-heading">💪 Strengths</div>
       <div class="analysis" id="rStrengths"></div>
     </div>
 
-    <div class="card">
+    <div class="card" id="rDevCard">
       <div class="sec-heading">🎯 Areas for Development</div>
       <div class="analysis" id="rDev"></div>
     </div>
 
-    <div class="card">
+    <div class="card" id="rActionsCard">
       <div class="sec-heading">🏖️ Optional Holiday Improvement Actions</div>
       <p style="font-size:0.82rem;color:var(--muted);margin-bottom:14px;font-style:italic">Completely optional — only if you'd like to get ahead over the holidays!</p>
       <div id="rActions"></div>
@@ -320,6 +354,44 @@
       <div class="sec-heading">📚 Summer Reading Recommendations</div>
       <p style="font-size:0.82rem;color:var(--muted);margin-bottom:14px">Based on books you've told us you love.</p>
       <div id="rBooks"></div>
+    </div>
+
+    <!-- Y10 dual-paper analysis cards -->
+    <div class="card" id="rLangCard" style="display:none">
+      <div class="sec-heading">📖 English Language</div>
+      <div class="paper-section">
+        <div class="paper-label">💪 Strengths</div>
+        <div class="analysis" id="rLangStrengths"></div>
+      </div>
+      <div class="paper-section">
+        <div class="paper-label">🎯 Areas for Development</div>
+        <div class="analysis" id="rLangDev"></div>
+      </div>
+    </div>
+
+    <div class="card" id="rLitCard" style="display:none">
+      <div class="sec-heading">📚 English Literature</div>
+      <div class="paper-section">
+        <div class="paper-label">💪 Strengths</div>
+        <div class="analysis" id="rLitStrengths"></div>
+      </div>
+      <div class="paper-section">
+        <div class="paper-label">🎯 Areas for Development</div>
+        <div class="analysis" id="rLitDev"></div>
+      </div>
+    </div>
+
+    <div class="card" id="rActionsY10Card" style="display:none">
+      <div class="sec-heading">🏖️ Optional Holiday Improvement Actions</div>
+      <p style="font-size:0.82rem;color:var(--muted);margin-bottom:14px;font-style:italic">Completely optional — only if you'd like to get ahead!</p>
+      <div class="paper-section">
+        <div class="paper-label">English Language</div>
+        <div id="rLangActions"></div>
+      </div>
+      <div class="paper-section">
+        <div class="paper-label">English Literature</div>
+        <div id="rLitActions"></div>
+      </div>
     </div>
 
     <div style="text-align:center;margin:20px 0" class="no-print">
@@ -548,10 +620,75 @@ const EXAMS = {
     ],
   },
 
-  // ── Y10 — add exam data here when ready ─────────────────────
   Y10: {
     label: 'Year 10',
-    comingSoon: true,
+    comingSoon: false,
+    dualPaper: true,
+    framework: 'Edexcel International GCSE English Language (4EA1) and English Literature (4ET1)',
+    examContext: {
+      language: 'English Language Paper 1 (4EA1). Text One: "Dance Delight" — a narrative about Rose, a street dancer who becomes a reality TV star. Text Two: "Young and Dyslexic? You\'ve got it going on" by Benjamin Zephaniah — a personal essay about growing up with dyslexia. Students answered Q1–Q4 only.',
+      literature: 'English Literature Paper 1R (4ET1). Section A — Unseen poem: "Daylight Robbery" by Paul Henry (a child\'s first haircut, themes of childhood, identity and growing up). Section B — Anthology: either Q2 comparing feelings in "Poem at Thirty-Nine" (Alice Walker) and "My Last Duchess" (Browning), or Q3 comparing suffering in "War Photographer" (Duffy) and another anthology poem.',
+    },
+    totals: { a: 23, b: 20, c: 30, langTotal: 23, litTotal: 50 },
+    sections: {
+      a: {
+        name: 'English Language',
+        title: 'IGCSE English Language Q1–4',
+        hasFeedback: true,
+        questions: [
+          { id:'lq1', label:'Q1 — Select two words/phrases showing how people reacted to Rose dancing', max:2,  aos:'AO1 — select and interpret information' },
+          { id:'lq2', label:'Q2 — Describe Rose\'s experiences on the dance show (own words)',          max:4,  aos:'AO1 — read and understand' },
+          { id:'lq3', label:'Q3 — Explain what we learn about Rose\'s time at school',                  max:5,  aos:'AO1 — select and interpret' },
+          { id:'lq4', label:'Q4 — How does Zephaniah use language AND structure about dyslexia?',       max:12, aos:'AO2 — language and structural analysis' },
+        ],
+        igcseBands: [
+          { label:'9', lower:16, upper:23 }, { label:'8', lower:15, upper:15 },
+          { label:'7', lower:14, upper:14 }, { label:'6', lower:13, upper:13 },
+          { label:'5', lower:12, upper:12 }, { label:'4', lower:11, upper:11 },
+          { label:'3', lower:8,  upper:10 }, { label:'2', lower:5,  upper:7  },
+          { label:'1', lower:3,  upper:4  }, { label:'U', lower:0,  upper:2  },
+        ],
+      },
+      b: {
+        name: 'Literature — Unseen Poetry',
+        title: 'IGCSE English Literature — Q1 Unseen Poetry',
+        bLabel: 'Q1 — "Daylight Robbery" (0–20)',
+        max: 20,
+        // Individual Q1 bands shown as hint only
+        bands: [
+          { label:'Grade 9', range:'16–20', desc:'Insightful, perceptive analysis of language, form and structure; discriminating examples.' },
+          { label:'Grade 7–8', range:'14–15', desc:'Focused, detailed analysis with fully relevant examples; links language and effect consistently.' },
+          { label:'Grade 5–6', range:'10–13', desc:'Clear and explained analysis; some development of language and structural effects.' },
+          { label:'Grade 3–4', range:'7–9',   desc:'Some relevant comment; responses begin to explain effects but may be underdeveloped.' },
+          { label:'Grade 1–2', range:'1–6',   desc:'Simple, limited response; identifies features with little or no explanation.' },
+        ],
+      },
+      c: {
+        name: 'Literature — Anthology Poetry',
+        title: 'IGCSE English Literature — Q2/3 Anthology Poetry',
+        options: [
+          'Q2 — Feelings about another person: "Poem at Thirty-Nine" and "My Last Duchess"',
+          'Q3 — Suffering: "War Photographer" and another anthology poem',
+        ],
+        criteria: [
+          { id:'litq23', label:'Q2/Q3 — Anthology poetry comparison (AO1+AO2+AO3)', max:30, desc:'Comparative essay (Levels 1–5)' },
+        ],
+        igcseBands: [
+          // Combined literature /50 (Q1/20 + Q2-3/30 lower boundary sums)
+          { label:'9', lower:40, upper:50 }, { label:'8', lower:37, upper:39 },
+          { label:'7', lower:34, upper:36 }, { label:'6', lower:30, upper:33 },
+          { label:'5', lower:26, upper:29 }, { label:'4', lower:23, upper:25 },
+          { label:'3', lower:17, upper:22 }, { label:'2', lower:12, upper:16 },
+          { label:'1', lower:7,  upper:11 }, { label:'U', lower:0,  upper:6  },
+        ],
+      },
+    },
+    radarAxes: [
+      { label:['Language','Comprehension (AO1)'], key:'langComp',  qs:['lq1','lq2','lq3'], max:11 },
+      { label:['Language','Analysis (AO2)'],       key:'langAn',   qs:['lq4'],             max:12 },
+      { label:['Literature','Unseen (AO2)'],        key:'litUnseen',secB:true,              max:20 },
+      { label:['Literature','Anthology (AO3)'],     key:'litAnth',  crit:['litq23'],        max:30 },
+    ],
   },
 };
 /* ══════════════════════════════════════════════════════════════ */
@@ -560,7 +697,7 @@ const EXAMS = {
 let EXAM = null;
 
 /* ── App state ───────────────────────────────────────────────── */
-let S = { yearGroup:null, step:1, marks:{}, bMark:0, bWWW:'', bEBI:'', cMarks:{}, cWWW:'', cEBI:'', books:[], name:'', teacher:'', cls:'', choices:{a:null,b:null,c:null} };
+let S = { yearGroup:null, step:1, marks:{}, bMark:0, bWWW:'', bEBI:'', cMarks:{}, cWWW:'', cEBI:'', aWWW:'', aEBI:'', books:[], name:'', teacher:'', cls:'', choices:{a:null,b:null,c:null} };
 let chart = null;
 
 /* ── Year selection ──────────────────────────────────────────── */
@@ -624,6 +761,17 @@ function buildForms() {
   });
   document.getElementById('totA').textContent = `0 / ${EXAM.totals.a}`;
 
+  // Language feedback (Y10 only)
+  const secAFB = document.getElementById('secAFeedbackArea');
+  if (EXAM.sections.a.hasFeedback) {
+    secAFB.innerHTML = `<div class="fb-grid" style="margin-top:20px;padding-top:18px;border-top:1px solid var(--border)">
+      <div class="field fb-www"><label>✓ What Went Well — Language</label><textarea id="aWWW" placeholder="e.g. Strong retrieval across Q1–Q3…"></textarea></div>
+      <div class="field fb-ebi"><label>△ Even Better If — Language</label><textarea id="aEBI" placeholder="e.g. Q4 analytical commentary needs more development…"></textarea></div>
+    </div>`;
+  } else {
+    secAFB.innerHTML = '';
+  }
+
   // Section C criteria
   const cqc = document.getElementById('secCCriteria');
   cqc.innerHTML = '';
@@ -641,10 +789,10 @@ function buildForms() {
   document.getElementById('totC').textContent = `0 / ${EXAM.totals.c}`;
   document.getElementById('bMarkOf').textContent = `/ ${EXAM.totals.b}`;
 
-  // Section titles
-  document.getElementById('secATitle').textContent = `📖 Section A — ${EXAM.sections.a.name}`;
-  document.getElementById('secBTitle').textContent = `✍️ Section B — ${EXAM.sections.b.name}`;
-  document.getElementById('secCTitle').textContent = `🖊️ Section C — ${EXAM.sections.c.name}`;
+  // Section titles — use custom title if defined (e.g. Y10), otherwise standard prefix
+  document.getElementById('secATitle').textContent = EXAM.sections.a.title ? `📖 ${EXAM.sections.a.title}` : `📖 Section A — ${EXAM.sections.a.name}`;
+  document.getElementById('secBTitle').textContent = EXAM.sections.b.title ? `✍️ ${EXAM.sections.b.title}` : `✍️ Section B — ${EXAM.sections.b.name}`;
+  document.getElementById('secCTitle').textContent = EXAM.sections.c.title ? `🖊️ ${EXAM.sections.c.title}` : `🖊️ Section C — ${EXAM.sections.c.name}`;
 }
 
 /* ── Helpers ─────────────────────────────────────────────────── */
@@ -674,11 +822,57 @@ function bandB() {
   const css = n==='4'?'band-4':n==='3'?'band-3':n==='2'?'band-2':'band-1';
   el.innerHTML = `<span class="band-pill ${css}">${matched.label} (${matched.range})</span> ${matched.desc}`;
 }
+/* ── IGCSE 9-1 grade helpers (Y10) ──────────────────────────── */
+function getIGCSEGrade(mark, bands) {
+  // bands ordered highest→lowest (Grade 9 first, U last)
+  for (let i = 0; i < bands.length; i++) {
+    if (mark >= bands[i].lower) return bands[i];
+  }
+  return bands[bands.length - 1];
+}
+function igcseColor(label) {
+  const n = parseInt(label);
+  if (n >= 7) return { bg:'#d1fae5', color:'#065f46', border:'#6ee7b7' };
+  if (n >= 5) return { bg:'#fef3c7', color:'#78350f', border:'#fcd34d' };
+  if (n === 4) return { bg:'#ffedd5', color:'#9a3412', border:'#fdba74' };
+  if (n >= 1) return { bg:'#fee2e2', color:'#991b1b', border:'#fca5a5' };
+  return              { bg:'#f3f4f6', color:'#374151', border:'#d1d5db' };
+}
+function buildIGCSEGradeBar(mark, maxMark, bands) {
+  const grade = getIGCSEGrade(mark, bands);
+  const cols   = bands.map(b => igcseColor(b.label));
+  const segments = bands.map((b, i) => {
+    const w = ((b.upper - b.lower + 1) / maxMark * 100).toFixed(2);
+    const active = b.label === grade.label;
+    return `<div style="width:${w}%;background:${cols[i].bg};height:100%;opacity:${active?1:0.5}"></div>`;
+  }).join('');
+  const ml = Math.min(Math.max((mark / maxMark) * 100, 1), 99);
+  // Boundary ticks — show grade labels at lower boundary of grades 4,5,6,7,8,9
+  const ticks = bands.filter(b => parseInt(b.label) >= 4 && parseInt(b.label) <= 9)
+    .map(b => `<div style="position:absolute;left:${(b.lower/maxMark*100).toFixed(1)}%;transform:translateX(-50%);font-size:0.62rem;opacity:0.8;white-space:nowrap">${b.label}</div>`)
+    .join('');
+  const next = bands[bands.findIndex(b=>b.label===grade.label)+1] || null;
+  const aboveMarks = mark - grade.lower;
+  const fromTxt = `${aboveMarks} mark${aboveMarks!==1?'s':''} above Grade ${grade.label} boundary (${grade.lower})`;
+  const nextTxt = next ? `${next.lower - mark} mark${next.lower-mark!==1?'s':''} from Grade ${next.label}` : 'Grade 9 achieved!';
+  return `<div style="margin:8px 0 4px">
+    <div style="position:relative">
+      <div style="display:flex;height:14px;border-radius:7px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.2)">${segments}</div>
+      <div style="position:absolute;left:${ml}%;top:-1px;transform:translateX(-50%);pointer-events:none">
+        <div style="width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-top:6px solid rgba(255,255,255,0.95);margin:0 auto"></div>
+        <div style="width:2px;height:14px;background:rgba(255,255,255,0.9);margin:0 auto"></div>
+      </div>
+    </div>
+    <div style="position:relative;height:16px;margin-top:1px">${ticks}</div>
+    <div style="text-align:center;font-size:0.74rem;opacity:0.88;margin-top:2px;line-height:1.5">${fromTxt}&nbsp;·&nbsp;${nextTxt}</div>
+  </div>`;
+}
+
 function scores() {
   const a = EXAM.sections.a.questions.reduce((s,q)=>s+(S.marks[q.id]||0),0);
   const b = S.bMark;
   const c = EXAM.sections.c.criteria.reduce((s,cr)=>s+(S.cMarks[cr.id]||0),0);
-  return { a, b, c, tot:a+b+c };
+  return { a, b, c, tot:a+b+c, langTotal:a, litTotal:b+c };
 }
 function radarPcts() {
   return EXAM.radarAxes.map(ax => {
@@ -763,18 +957,97 @@ function collect() {
   S.books = [document.getElementById('bk1').value.trim(),
              document.getElementById('bk2').value.trim(),
              document.getElementById('bk3').value.trim()];
-  // choices are set directly by setChoice() — just ensure they exist
+  S.aWWW = document.getElementById('aWWW')?.value.trim() || '';
+  S.aEBI = document.getElementById('aEBI')?.value.trim() || '';
   S.choices = S.choices || { a:null, b:null, c:null };
 }
 
 /* ── Build AI prompt ─────────────────────────────────────────── */
 function buildPrompt() {
-  const sc    = scores();
+  const sc  = scores();
+  const ages = { 'Year 7':'11–12', 'Year 8':'12–13', 'Year 9':'13–14', 'Year 10':'14–15' };
+  const favs = S.books.filter(Boolean).join(', ') || 'not provided';
+  const bookGuidance = S.yearGroup === 'Y9' || S.yearGroup === 'Y10'
+    ? 'This student is 13–15 — feel free to recommend from the more challenging sections of the list if their stated favourites suggest readiness.'
+    : 'Prioritise accessible titles unless favourites suggest readiness for challenge.';
+  const readingListTxt = CFG.readingList.map((b,i)=>`${i+1}. ${b}`).join('\n');
+
+  if (EXAM.dualPaper) {
+    // Y10 dual-paper prompt
+    const langGrade = getIGCSEGrade(sc.langTotal, EXAM.sections.a.igcseBands);
+    const litGrade  = getIGCSEGrade(sc.litTotal,  EXAM.sections.c.igcseBands);
+    const choiceC   = (EXAM.sections.c.options && S.choices.c !== null)
+      ? `\n  Anthology question answered: ${EXAM.sections.c.options[S.choices.c]}` : '';
+    const qLines = EXAM.sections.a.questions.map(q=>
+      `  ${q.label}: ${S.marks[q.id]}/${q.max} (${q.aos})`).join('\n');
+
+    return `You are a supportive English teacher at an international school writing a personalised end-of-year IGCSE report for ${S.name}, a Year 10 student (age 14–15).${S.teacher?` Teacher: ${S.teacher}.`:''}${S.cls?` Class: ${S.cls}.`:''}
+
+Use formal but warm language consistent with Edexcel IGCSE feedback. Reference specific AOs (AO1, AO2, AO3) precisely. Use the vocabulary of the mark scheme: perceptive, evaluative, analytical, discriminating, sustained, developed, etc.
+
+FRAMEWORK: ${EXAM.framework}
+
+ENGLISH LANGUAGE RESULTS (Paper 4EA1, Q1–Q4):
+${qLines}
+Language total: ${sc.langTotal}/${EXAM.totals.langTotal} — IGCSE Grade ${langGrade.label} (Grade ${langGrade.label} boundary: ${langGrade.lower}/${EXAM.totals.langTotal})
+Teacher Feedback — What Went Well: "${S.aWWW||'Not provided'}"
+Teacher Feedback — Even Better If: "${S.aEBI||'Not provided'}"
+
+Language context: ${EXAM.examContext.language}
+
+ENGLISH LITERATURE RESULTS (Paper 4ET1):
+  Q1 Unseen — "Daylight Robbery" (AO1+AO2): ${sc.b}/${EXAM.totals.b}
+  Q2/Q3 Anthology (AO1+AO2+AO3): ${sc.c}/${EXAM.totals.c}${choiceC}
+Literature total: ${sc.litTotal}/${EXAM.totals.litTotal} — IGCSE Grade ${litGrade.label} (Grade ${litGrade.label} boundary: ${litGrade.lower}/${EXAM.totals.litTotal})
+Teacher Feedback — What Went Well: "${S.bWWW||'Not provided'}"
+Teacher Feedback — Even Better If: "${S.bEBI||'Not provided'}"
+
+Literature context: ${EXAM.examContext.literature}
+
+SKILL PROFILE (% of available marks):
+${EXAM.radarAxes.map((ax,i)=>`  ${ax.label.join(' ')}: ${radarPcts()[i]}%`).join('\n')}
+
+STUDENT'S FAVOURITE BOOKS: ${favs}
+
+SCHOOL READING LIST:
+${readingListTxt}
+
+Write the report with EXACTLY these seven headings (include the ## symbols):
+
+## LANGUAGE STRENGTHS
+2 paragraphs. Reference specific questions, AO codes and marks. Acknowledge Grade ${langGrade.label} positively. Formal, warm, precise IGCSE register.
+
+## LANGUAGE DEVELOPMENT
+2 paragraphs. 2–3 specific areas. Reference AOs and EBI comments. Constructive.
+
+## LITERATURE STRENGTHS
+2 paragraphs. Reference Q1 unseen and Q2/3 anthology specifically with AO codes. Acknowledge Grade ${litGrade.label} positively.
+
+## LITERATURE DEVELOPMENT
+2 paragraphs. 2–3 specific areas. Reference AOs and EBI comments.
+
+## LANGUAGE HOLIDAY ACTIONS
+Exactly 3 specific, practical actions — completely optional. Format:
+ACTION 1: [short title] | [1–2 sentences]
+ACTION 2: [short title] | [1–2 sentences]
+ACTION 3: [short title] | [1–2 sentences]
+
+## LITERATURE HOLIDAY ACTIONS
+Exactly 3 specific, practical actions — completely optional. Same format.
+ACTION 1: [short title] | [1–2 sentences]
+ACTION 2: [short title] | [1–2 sentences]
+ACTION 3: [short title] | [1–2 sentences]
+
+## BOOK RECOMMENDATIONS
+Exactly 3 books from the list above only. ${bookGuidance} Format:
+BOOK 1: [Title — Author] | [1–2 sentences]
+BOOK 2: [Title — Author] | [1–2 sentences]
+BOOK 3: [Title — Author] | [1–2 sentences]`;
+  }
+
+  // Standard (Y7 / Y9) prompt
   const pct   = Math.round(sc.tot / EXAM.totals.all * 100);
   const grade = getGrade(pct);
-  const ages  = { 'Year 7':'11–12', 'Year 8':'12–13', 'Year 9':'13–14', 'Year 10':'14–15' };
-
-  // Band label for Section B — use exam-specific bands if available
   let bandLabel = '';
   if (EXAM.sections.b.bands) {
     const matched = EXAM.sections.b.bands.find(b => {
@@ -783,40 +1056,29 @@ function buildPrompt() {
     });
     bandLabel = matched ? `${matched.label} (${matched.range})` : '';
   }
-
-  // Section A — include chosen poem/option if student selected one
   const choiceA = (EXAM.sections.a.options && S.choices.a !== null)
     ? `\nPoem/option answered: ${EXAM.sections.a.options[S.choices.a]}` : '';
   const choiceB = (EXAM.sections.b.options && S.choices.b !== null)
     ? `\nQuestion answered: ${EXAM.sections.b.options[S.choices.b]}` : '';
-  const choiceC = (EXAM.sections.c.options && S.choices.c !== null)
+  const choiceC2 = (EXAM.sections.c.options && S.choices.c !== null)
     ? `\nTask answered: ${EXAM.sections.c.options[S.choices.c]}` : '';
-
   const qLines = EXAM.sections.a.questions.map(q =>
     `  ${q.label}: ${S.marks[q.id]}/${q.max} (${q.aos})`).join('\n');
   const cLines = EXAM.sections.c.criteria.map(c =>
     `  ${c.label}: ${S.cMarks[c.id]}/${c.max}`).join('\n');
   const radarSummary = EXAM.radarAxes.map((ax,i) =>
     `  ${ax.label.join(' ')}: ${radarPcts()[i]}%`).join('\n');
-  const favs = S.books.filter(Boolean).join(', ') || 'not provided';
 
-  // Book guidance varies by year group maturity
-  const bookGuidance = S.yearGroup === 'Y9' || S.yearGroup === 'Y10'
-    ? 'This student is 13–15 years old — feel free to recommend from the more challenging sections of the list if their stated favourites suggest readiness.'
-    : 'Prioritise accessible (lighter-band) titles unless the student\'s stated favourites suggest they are ready for more challenging texts.';
-
-  return `You are a supportive English teacher writing a personalised end-of-year exam report for a ${EXAM.label} student (age ${ages[EXAM.label]||''}). Your tone should be warm, encouraging, specific, and age-appropriate.
+  return `You are a supportive English teacher writing a personalised end-of-year exam report for a ${EXAM.label} student (age ${ages[EXAM.label]||''}). Warm, encouraging, specific, age-appropriate tone.
 
 STUDENT: ${S.name}${S.teacher?` | Teacher: ${S.teacher}`:''}${S.cls?` | Class: ${S.cls}`:''}
-YEAR GROUP: ${EXAM.label}
 FRAMEWORK: ${EXAM.framework}
-
 EXAM CONTEXT: ${EXAM.examContext}
 
 RESULTS:
 Section A (${EXAM.sections.a.name}): ${sc.a}/${EXAM.totals.a} (${Math.round(sc.a/EXAM.totals.a*100)}%)${choiceA}
 Section B (${EXAM.sections.b.name}): ${sc.b}/${EXAM.totals.b} (${Math.round(sc.b/EXAM.totals.b*100)}%)${bandLabel?' — '+bandLabel:''}${choiceB}
-Section C (${EXAM.sections.c.name}): ${sc.c}/${EXAM.totals.c} (${Math.round(sc.c/EXAM.totals.c*100)}%)${choiceC}
+Section C (${EXAM.sections.c.name}): ${sc.c}/${EXAM.totals.c} (${Math.round(sc.c/EXAM.totals.c*100)}%)${choiceC2}
 Overall: ${sc.tot}/${EXAM.totals.all} (${pct}%) — Grade: ${grade.label} (${grade.range})
 
 SECTION A BREAKDOWN:
@@ -831,31 +1093,30 @@ ${cLines}
 What Went Well: "${S.cWWW||'Not provided'}"
 Even Better If: "${S.cEBI||'Not provided'}"
 
-SKILL AREAS — % of available marks:
-${radarSummary}
+SKILL AREAS: ${radarSummary}
 
 STUDENT'S FAVOURITE BOOKS: ${favs}
 
-SCHOOL READING LIST (only recommend from this list):
-${CFG.readingList.map((b,i)=>`${i+1}. ${b}`).join('\n')}
+SCHOOL READING LIST:
+${readingListTxt}
 
-Write the report with EXACTLY these four headings (include the ## symbols):
+Write the report with EXACTLY these four headings (## symbols required):
 
 ## STRENGTHS
-2–3 paragraphs. Be specific — reference particular questions, assessment objective codes, and marks. Acknowledge the overall grade (${grade.label}) positively. Warm and affirming tone.
+2–3 paragraphs. Reference questions, AO codes, marks. Acknowledge grade (${grade.label}) positively. Warm and affirming.
 
 ## AREAS FOR DEVELOPMENT
-2–3 paragraphs. Identify 2–3 areas to work on. Be constructive. Reference assessment objectives and teacher EBI comments where relevant.
+2–3 paragraphs. 2–3 areas. Reference AOs and EBI comments. Constructive.
 
 ## HOLIDAY IMPROVEMENT ACTIONS
-Exactly 3 specific, practical, age-appropriate actions — completely optional. Format:
-ACTION 1: [short title] | [1–2 sentences]
-ACTION 2: [short title] | [1–2 sentences]
-ACTION 3: [short title] | [1–2 sentences]
+Exactly 3 optional actions. Format:
+ACTION 1: [title] | [1–2 sentences]
+ACTION 2: [title] | [1–2 sentences]
+ACTION 3: [title] | [1–2 sentences]
 
 ## BOOK RECOMMENDATIONS
-Exactly 3 books from the list above only. ${bookGuidance} Format:
-BOOK 1: [Title — Author] | [1–2 sentences connecting to stated favourites]
+Exactly 3 from the list above only. ${bookGuidance} Format:
+BOOK 1: [Title — Author] | [1–2 sentences]
 BOOK 2: [Title — Author] | [1–2 sentences]
 BOOK 3: [Title — Author] | [1–2 sentences]`;
 }
@@ -881,39 +1142,93 @@ function parseAI(txt) {
     const lines = chunk.trim().split('\n');
     const h = lines[0].trim().toUpperCase();
     const body = lines.slice(1).join('\n').trim();
-    if (h.includes('STRENGTH')) out.strengths = body;
-    else if (h.includes('AREA') || h.includes('DEVELOP')) out.dev = body;
-    else if (h.includes('HOLIDAY') || h.includes('ACTION')) out.actions = body;
-    else if (h.includes('BOOK')) out.books = body;
+    if      (h.includes('LANGUAGE') && h.includes('STRENGTH'))                   out.langStrengths = body;
+    else if (h.includes('LANGUAGE') && (h.includes('AREA')||h.includes('DEVEL'))) out.langDev       = body;
+    else if (h.includes('LITERATURE') && h.includes('STRENGTH'))                  out.litStrengths  = body;
+    else if (h.includes('LITERATURE') && (h.includes('AREA')||h.includes('DEVEL')))out.litDev        = body;
+    else if (h.includes('LANGUAGE') && (h.includes('HOLIDAY')||h.includes('ACTION')))out.langActions = body;
+    else if (h.includes('LITERATURE') && (h.includes('HOLIDAY')||h.includes('ACTION')))out.litActions= body;
+    else if (h.includes('STRENGTH'))                                               out.strengths     = body;
+    else if (h.includes('AREA') || h.includes('DEVELOP'))                         out.dev           = body;
+    else if (h.includes('HOLIDAY') || h.includes('ACTION'))                       out.actions       = body;
+    else if (h.includes('BOOK'))                                                   out.books         = body;
   });
   return out;
 }
 
 /* ── Render results ──────────────────────────────────────────── */
+function gradeSpan(label, c) {
+  return `<span style="display:inline-flex;align-items:center;background:${c.bg};color:${c.color};border:2px solid ${c.border};border-radius:24px;padding:6px 18px;font-weight:800;font-size:1.05rem;">${label}</span>`;
+}
+
 function render(parsed) {
-  const sc  = scores();
-  const pct = Math.round(sc.tot / EXAM.totals.all * 100);
-  const grade = getGrade(pct);
-  document.getElementById('rName').textContent  = `${S.name} — Exam Summary`;
-  document.getElementById('rSub').textContent   = `${EXAM.label} English${S.teacher?` · ${S.teacher}`:''}${S.cls?` · ${S.cls}`:''}`;
-  document.getElementById('rTotal').textContent = sc.tot;
-  document.getElementById('rTotalLbl').textContent = `Total / ${EXAM.totals.all}`;
-  document.getElementById('rPct').textContent   = `${pct}%`;
-  document.getElementById('rABC').textContent   = `${sc.a} / ${sc.b} / ${sc.c}`;
-  document.getElementById('rGrade').innerHTML   =
-    `<div style="margin-bottom:6px">
-      <span style="display:inline-flex;align-items:center;gap:8px;background:${grade.bg};color:${grade.color};border:2px solid ${grade.border};border-radius:28px;padding:8px 22px;font-weight:800;font-size:1.15rem;">${grade.label}</span>
-    </div>${buildGradeBar(pct, sc.tot)}`;
+  const sc = scores();
+  const sub = `${EXAM.label} English${S.teacher?` · ${S.teacher}`:''}${S.cls?` · ${S.cls}`:''}`;
+
+  if (EXAM.dualPaper) {
+    // ── Y10 dual hero ────────────────────────────────────────────
+    document.getElementById('rHeroStd').style.display  = 'none';
+    document.getElementById('rHeroDual').style.display = 'block';
+    document.getElementById('rNameDual').textContent   = `${S.name} — Exam Summary`;
+    document.getElementById('rSubDual').textContent    = sub;
+
+    const langGrade = getIGCSEGrade(sc.langTotal, EXAM.sections.a.igcseBands);
+    const litGrade  = getIGCSEGrade(sc.litTotal,  EXAM.sections.c.igcseBands);
+    const lc = igcseColor(langGrade.label), llc = igcseColor(litGrade.label);
+
+    document.getElementById('rLangGrade').innerHTML = gradeSpan(`Grade ${langGrade.label}`, lc);
+    document.getElementById('rLangBar').innerHTML   = buildIGCSEGradeBar(sc.langTotal, EXAM.totals.langTotal, EXAM.sections.a.igcseBands);
+    document.getElementById('rLangScore').textContent = `${sc.langTotal} / ${EXAM.totals.langTotal} (${Math.round(sc.langTotal/EXAM.totals.langTotal*100)}%)`;
+
+    document.getElementById('rLitGrade').innerHTML  = gradeSpan(`Grade ${litGrade.label}`, llc);
+    document.getElementById('rLitBar').innerHTML    = buildIGCSEGradeBar(sc.litTotal, EXAM.totals.litTotal, EXAM.sections.c.igcseBands);
+    document.getElementById('rLitScore').textContent = `${sc.litTotal} / ${EXAM.totals.litTotal} (${Math.round(sc.litTotal/EXAM.totals.litTotal*100)}%)`;
+
+    // Show Y10 cards, hide standard cards
+    ['rStrengthsCard','rDevCard','rActionsCard'].forEach(id => {
+      const el = document.getElementById(id); if (el) el.style.display = 'none';
+    });
+    document.getElementById('rLangCard').style.display       = 'block';
+    document.getElementById('rLitCard').style.display        = 'block';
+    document.getElementById('rActionsY10Card').style.display = 'block';
+
+    drawParas('rLangStrengths', parsed.langStrengths);
+    drawParas('rLangDev',       parsed.langDev);
+    drawParas('rLitStrengths',  parsed.litStrengths);
+    drawParas('rLitDev',        parsed.litDev);
+    drawActions('rLangActions', parsed.langActions);
+    drawActions('rLitActions',  parsed.litActions);
+
+  } else {
+    // ── Standard hero (Y7 / Y9) ──────────────────────────────────
+    document.getElementById('rHeroStd').style.display  = 'block';
+    document.getElementById('rHeroDual').style.display = 'none';
+    const pct   = Math.round(sc.tot / EXAM.totals.all * 100);
+    const grade = getGrade(pct);
+    document.getElementById('rName').textContent     = `${S.name} — Exam Summary`;
+    document.getElementById('rSub').textContent      = sub;
+    document.getElementById('rTotal').textContent    = sc.tot;
+    document.getElementById('rTotalLbl').textContent = `Total / ${EXAM.totals.all}`;
+    document.getElementById('rPct').textContent      = `${pct}%`;
+    document.getElementById('rABC').textContent      = `${sc.a} / ${sc.b} / ${sc.c}`;
+    document.getElementById('rGrade').innerHTML      =
+      `<div style="margin-bottom:6px">${gradeSpan(grade.label, grade)}</div>${buildGradeBar(pct, sc.tot)}`;
+
+    document.getElementById('rLangCard').style.display       = 'none';
+    document.getElementById('rLitCard').style.display        = 'none';
+    document.getElementById('rActionsY10Card').style.display = 'none';
+
+    drawParas('rStrengths', parsed.strengths);
+    drawParas('rDev',       parsed.dev);
+    drawActions('rActions', parsed.actions);
+  }
 
   drawRadar();
   drawTable(sc);
-  drawParas('rStrengths', parsed.strengths);
-  drawParas('rDev',       parsed.dev);
-  drawActions('rActions', parsed.actions);
-  drawBooks('rBooks',     parsed.books);
+  drawBooks('rBooks', parsed.books);
 
   document.getElementById('results').style.display = 'block';
-  document.getElementById('pg5').style.display = 'none';
+  document.getElementById('pg5').style.display     = 'none';
   document.getElementById('stepper').style.display = 'none';
   window.scrollTo({top:0, behavior:'smooth'});
 }
@@ -981,22 +1296,48 @@ function pctBar(n) {
 function drawTable(sc) {
   const el = document.getElementById('marksTable');
   let h = `<thead><tr><th>Question / Criterion</th><th>Mark</th><th>Max</th><th>%</th></tr></thead><tbody>`;
-  h += `<tr class="sec-hdr"><td colspan="4">Section A — ${EXAM.sections.a.name}</td></tr>`;
-  EXAM.sections.a.questions.forEach(q => {
-    const got=S.marks[q.id], p=Math.round(got/q.max*100);
-    h += `<tr><td>${q.label}</td><td>${got}</td><td>${q.max}</td><td>${p}%${pctBar(p)}</td></tr>`;
-  });
-  h += `<tr class="sub-total"><td>Section A Total</td><td>${sc.a}</td><td>${EXAM.totals.a}</td><td>${Math.round(sc.a/EXAM.totals.a*100)}%</td></tr>`;
-  h += `<tr class="sec-hdr"><td colspan="4">Section B — ${EXAM.sections.b.name}</td></tr>
-    <tr><td>Q13 — ${EXAM.sections.b.name} Essay</td><td>${sc.b}</td><td>${EXAM.totals.b}</td><td>${Math.round(sc.b/EXAM.totals.b*100)}%${pctBar(Math.round(sc.b/EXAM.totals.b*100))}</td></tr>
-    <tr class="sub-total"><td>Section B Total</td><td>${sc.b}</td><td>${EXAM.totals.b}</td><td>${Math.round(sc.b/EXAM.totals.b*100)}%</td></tr>`;
-  h += `<tr class="sec-hdr"><td colspan="4">Section C — ${EXAM.sections.c.name}</td></tr>`;
-  EXAM.sections.c.criteria.forEach(c => {
-    const got=S.cMarks[c.id], p=Math.round(got/c.max*100);
-    h += `<tr><td>${c.label}</td><td>${got}</td><td>${c.max}</td><td>${p}%${pctBar(p)}</td></tr>`;
-  });
-  h += `<tr class="sub-total"><td>Section C Total</td><td>${sc.c}</td><td>${EXAM.totals.c}</td><td>${Math.round(sc.c/EXAM.totals.c*100)}%</td></tr>`;
-  h += `<tr class="total-row"><td>Overall Total</td><td>${sc.tot}</td><td>${EXAM.totals.all}</td><td>${Math.round(sc.tot/EXAM.totals.all*100)}%</td></tr>`;
+
+  if (EXAM.dualPaper) {
+    // Y10 — Language then Literature, no combined total
+    h += `<tr class="sec-hdr"><td colspan="4">English Language (4EA1)</td></tr>`;
+    EXAM.sections.a.questions.forEach(q => {
+      const got=S.marks[q.id], p=Math.round(got/q.max*100);
+      h += `<tr><td>${q.label}</td><td>${got}</td><td>${q.max}</td><td>${p}%${pctBar(p)}</td></tr>`;
+    });
+    const lg = getIGCSEGrade(sc.langTotal, EXAM.sections.a.igcseBands);
+    h += `<tr class="sub-total"><td>Language Total — Grade ${lg.label}</td><td>${sc.langTotal}</td><td>${EXAM.totals.langTotal}</td><td>${Math.round(sc.langTotal/EXAM.totals.langTotal*100)}%</td></tr>`;
+
+    h += `<tr class="sec-hdr"><td colspan="4">English Literature (4ET1)</td></tr>`;
+    const choiceC = (EXAM.sections.c.options && S.choices.c !== null) ? ` — ${EXAM.sections.c.options[S.choices.c].split(' — ')[0]}` : '';
+    const bPct = Math.round(sc.b/EXAM.totals.b*100);
+    h += `<tr><td>Q1 — Unseen Poetry ("Daylight Robbery")</td><td>${sc.b}</td><td>${EXAM.totals.b}</td><td>${bPct}%${pctBar(bPct)}</td></tr>`;
+    EXAM.sections.c.criteria.forEach(c => {
+      const got=S.cMarks[c.id], p=Math.round(got/c.max*100);
+      h += `<tr><td>Q2/Q3 Anthology${choiceC}</td><td>${got}</td><td>${c.max}</td><td>${p}%${pctBar(p)}</td></tr>`;
+    });
+    const litg = getIGCSEGrade(sc.litTotal, EXAM.sections.c.igcseBands);
+    h += `<tr class="sub-total"><td>Literature Total — Grade ${litg.label}</td><td>${sc.litTotal}</td><td>${EXAM.totals.litTotal}</td><td>${Math.round(sc.litTotal/EXAM.totals.litTotal*100)}%</td></tr>`;
+
+  } else {
+    // Standard Y7 / Y9
+    h += `<tr class="sec-hdr"><td colspan="4">Section A — ${EXAM.sections.a.name}</td></tr>`;
+    EXAM.sections.a.questions.forEach(q => {
+      const got=S.marks[q.id], p=Math.round(got/q.max*100);
+      h += `<tr><td>${q.label}</td><td>${got}</td><td>${q.max}</td><td>${p}%${pctBar(p)}</td></tr>`;
+    });
+    h += `<tr class="sub-total"><td>Section A Total</td><td>${sc.a}</td><td>${EXAM.totals.a}</td><td>${Math.round(sc.a/EXAM.totals.a*100)}%</td></tr>`;
+    h += `<tr class="sec-hdr"><td colspan="4">Section B — ${EXAM.sections.b.name}</td></tr>
+      <tr><td>${EXAM.sections.b.name} Essay</td><td>${sc.b}</td><td>${EXAM.totals.b}</td><td>${Math.round(sc.b/EXAM.totals.b*100)}%${pctBar(Math.round(sc.b/EXAM.totals.b*100))}</td></tr>
+      <tr class="sub-total"><td>Section B Total</td><td>${sc.b}</td><td>${EXAM.totals.b}</td><td>${Math.round(sc.b/EXAM.totals.b*100)}%</td></tr>`;
+    h += `<tr class="sec-hdr"><td colspan="4">Section C — ${EXAM.sections.c.name}</td></tr>`;
+    EXAM.sections.c.criteria.forEach(c => {
+      const got=S.cMarks[c.id], p=Math.round(got/c.max*100);
+      h += `<tr><td>${c.label}</td><td>${got}</td><td>${c.max}</td><td>${p}%${pctBar(p)}</td></tr>`;
+    });
+    h += `<tr class="sub-total"><td>Section C Total</td><td>${sc.c}</td><td>${EXAM.totals.c}</td><td>${Math.round(sc.c/EXAM.totals.c*100)}%</td></tr>`;
+    h += `<tr class="total-row"><td>Overall Total</td><td>${sc.tot}</td><td>${EXAM.totals.all}</td><td>${Math.round(sc.tot/EXAM.totals.all*100)}%</td></tr>`;
+  }
+
   h += `</tbody>`;
   el.innerHTML = h;
 }
