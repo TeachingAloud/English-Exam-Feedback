@@ -1123,10 +1123,11 @@ BOOK 3: [Title — Author] | [1–2 sentences]`;
 
 /* ── Call Netlify proxy ──────────────────────────────────────── */
 async function callAPI(prompt) {
+  const maxTokens = EXAM.dualPaper ? 4000 : 2000;
   const r = await fetch('/.netlify/functions/generate', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ prompt, model: CFG.model })
+    body: JSON.stringify({ prompt, model: CFG.model, maxTokens })
   });
   if (!r.ok) {
     const e = await r.json().catch(()=>({}));
