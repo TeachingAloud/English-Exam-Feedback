@@ -3,7 +3,7 @@ exports.handler = async (event) => {
     return { statusCode: 405, body: 'Method not allowed' };
   }
 
-  const { prompt, model } = JSON.parse(event.body);
+  const { prompt, model, maxTokens } = JSON.parse(event.body);
 
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -14,7 +14,7 @@ exports.handler = async (event) => {
     },
     body: JSON.stringify({
       model: model || 'claude-haiku-4-5-20251001',
-      max_tokens: 2000,
+      max_tokens: maxTokens || 2000,
       messages: [{ role: 'user', content: prompt }],
     }),
   });
